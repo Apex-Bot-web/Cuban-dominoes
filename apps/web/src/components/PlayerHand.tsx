@@ -1,6 +1,11 @@
+import { clsx } from 'clsx';
 import type { Tile } from '@dominoes/engine';
 import { sameTile } from '@dominoes/engine';
-import { DominoTile } from './DominoTile';
+import { DominoTile, type TileState } from './DominoTile';
+
+function tileKey(t: Tile) {
+  return `${Math.min(t[0], t[1])}-${Math.max(t[0], t[1])}`;
+}
 
 interface PlayerHandProps {
   tiles: readonly Tile[];
@@ -12,10 +17,6 @@ interface PlayerHandProps {
   onCancelSelection: () => void;
 }
 
-function tileKey(t: Tile): string {
-  return `${Math.min(t[0], t[1])}-${Math.max(t[0], t[1])}`;
-}
-
 export function PlayerHand({
   tiles,
   playableTiles,
@@ -25,53 +26,59 @@ export function PlayerHand({
   onSelect,
   onCancelSelection,
 }: PlayerHandProps) {
+  const hasPlayable = playableTiles.size > 0;
+
   return (
-    <div className="flex flex-col items-center gap-1 pb-safe">
+    <div
+      className={clsx(
+        'flex flex-col items-center gap-1.5 transition-all duration-300 pb-safe',
+        isMyTurn && hasPlayable && 'ring-1 ring-white/20 bg-white/5 rounded-t-2xl pt-2',
+      )}
+    >
       {/* Status label */}
-      <div className="text-xs font-semibold tracking-wide uppercase">
+      <div className="text-xs font-bold tracking-widest uppercase">
         {choosingSide ? (
-          <span className="text-yellow-300 animate-pulse">Elige un lado ↑</span>
+          <span className="text-yellow-300">Elige un lado ↑</span>
         ) : isMyTurn ? (
-          playableTiles.size > 0 ? (
-            <span className="text-green-300">Tu turno — toca una ficha</span>
+          hasPlayable ? (
+            <span className="text-green-300">Tu Turno — toca una ficha</span>
           ) : (
-            <span className="text-orange-300">Sin jugada — pasando…</span>
+            <span className="text-orange-300 animate-pulse">Sin jugada — Pasando…</span>
           )
         ) : (
-          <span className="text-green-700">Esperando…</span>
+          <span className="text-white/30">Esperando…</span>
         )}
       </div>
 
-      {/* Tile row */}
+      {/* Tiles */}
       <div
-        className="flex items-end gap-1 overflow-x-auto w-full px-2"
-        style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+        className="flex items-end gap-1.5 overflow-x-auto no-scrollbar w-full px-3"
+        style={{ paddingBottom: 4 }}
       >
         {tiles.map((tile, i) => {
           const key = tileKey(tile);
           const isSelected = selectedTile !== null && sameTile(tile, selectedTile);
           const isPlayable = isMyTurn && playableTiles.has(key);
-          const isDim = isMyTurn && !isPlayable && !isSelected;
+
+          let tileState: TileState = 'normal';
+          if (isSelected) tileState = 'selected';
+          else if (isPlayable) tileState = 'playable';
+          else if (isMyTurn && !isPlayable) tileState = 'dim';
 
           return (
             <div
               key={i}
-              className={`transition-transform duration-150 ${
-                isSelected ? '-translate-y-3' : isPlayable ? '-translate-y-1 hover:-translate-y-2' : ''
-              }`}
+              className="transition-transform duration-150"
+              style={{ transform: isPlayable && !isSelected ? 'translateY(-4px)' : undefined }}
             >
               <DominoTile
                 tile={tile}
                 orientation="v"
-                selected={isSelected}
-                highlighted={isPlayable && !isSelected}
-                dim={isDim}
+                size="lg"
+                state={tileState}
                 onClick={() => {
-                  if (isSelected) {
-                    onCancelSelection();
-                  } else if (isPlayable) {
-                    onSelect(tile);
-                  }
+                  if (isSelected) onCancelSelection();
+                  else if (isPlayable) onSelect(tile);
                 }}
               />
             </div>

@@ -7,8 +7,8 @@ import { PlayerHand } from './components/PlayerHand';
 import { ScoreScreen } from './components/ScoreScreen';
 import { MatchOverScreen } from './components/MatchOverScreen';
 
-// Seats layout (counterclockwise): 0=you(bottom), 1=left, 2=top(partner), 3=right
-const OPPONENTS: Seat[] = [3, 2, 1];
+// Turn order counterclockwise: 0 (you, bottom) → 1 (left) → 2 (top / partner) → 3 (right)
+const OPPONENT_SEATS: Seat[] = [3, 2, 1];
 
 export default function App() {
   const {
@@ -27,14 +27,14 @@ export default function App() {
   } = useGame('duro');
 
   const { tileCounts, turn, passHistory, teamScores, targetScore, handNumber, sleepingCount } = view;
+  const isMyTurn = turn === 0 && phase === 'playing';
 
   return (
     <div
-      className="h-full flex flex-col bg-felt overflow-hidden relative select-none"
-      style={{ touchAction: 'none' }}
+      className="h-full flex flex-col felt-texture overflow-hidden relative select-none"
       onClick={choosingSide ? cancelSelection : undefined}
     >
-      {/* Score bar */}
+      {/* ── Score bar ───────────────────────────────────────────────────── */}
       <ScoreBar
         teamScores={teamScores}
         targetScore={targetScore}
@@ -43,9 +43,9 @@ export default function App() {
         botThinking={botThinking}
       />
 
-      {/* Opponents row */}
-      <div className="flex justify-around items-start px-1 pt-1 shrink-0">
-        {OPPONENTS.map((seat) => (
+      {/* ── Opponent seats ───────────────────────────────────────────────── */}
+      <div className="flex justify-around items-start px-2 pt-2 pb-1 shrink-0">
+        {OPPONENT_SEATS.map((seat) => (
           <OpponentSeat
             key={seat}
             seat={seat}
@@ -56,7 +56,7 @@ export default function App() {
         ))}
       </div>
 
-      {/* Board — takes remaining vertical space */}
+      {/* ── Board (flex-1 — takes remaining space) ───────────────────────── */}
       <Board
         board={view.board}
         openEnds={view.openEnds}
@@ -64,24 +64,25 @@ export default function App() {
         onPickSide={playSide}
       />
 
-      {/* Human's hand */}
-      <div className="shrink-0 bg-felt-dark/50 border-t border-white/10 pb-1">
-        {/* Your tile count */}
-        <div className="text-center text-green-400/50 text-[10px] font-mono pt-0.5">
-          Tú — {view.myHand.length} fic. {turn === 0 ? '• Tu turno' : ''}
+      {/* ── Your hand ────────────────────────────────────────────────────── */}
+      <div className="shrink-0 bg-felt-dark/60 border-t border-white/10">
+        <div className="text-center py-1">
+          <span className="text-white/30 text-[10px] font-mono">
+            Tú — {view.myHand.length} fichas{turn === 0 && phase === 'playing' ? ' • Tu Turno' : ''}
+          </span>
         </div>
         <PlayerHand
           tiles={view.myHand}
           playableTiles={playableTiles}
           selectedTile={selectedTile}
-          isMyTurn={turn === 0 && phase === 'playing'}
+          isMyTurn={isMyTurn}
           choosingSide={choosingSide}
           onSelect={selectTile}
           onCancelSelection={cancelSelection}
         />
       </div>
 
-      {/* Hand-over overlay */}
+      {/* ── Hand-over overlay ─────────────────────────────────────────────── */}
       {phase === 'hand-over' && view.result && (
         <ScoreScreen
           result={view.result}
@@ -92,7 +93,7 @@ export default function App() {
         />
       )}
 
-      {/* Match-over overlay */}
+      {/* ── Match-over overlay ────────────────────────────────────────────── */}
       {phase === 'match-over' && match.winnerTeam !== undefined && (
         <MatchOverScreen
           winnerTeam={match.winnerTeam}
