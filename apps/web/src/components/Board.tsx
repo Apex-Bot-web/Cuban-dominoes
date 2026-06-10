@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import type { Tile, BoardSide } from '@dominoes/engine';
+import { isDouble } from '@dominoes/engine';
 import { DominoTile, TILE_SIZES } from './DominoTile';
 
-// ─── Snake-board helpers ───────────────────────────────────────────────────────
+// ─── Snake-board layout helpers ───────────────────────────────────────────────
 
 interface SnakeRow {
   tiles: Tile[];
+  /** odd rows go right-to-left and have flipped pip order */
   flipped: boolean;
   align: 'left' | 'right';
 }
@@ -19,7 +21,7 @@ function buildSnakeRows(board: readonly Tile[], tilesPerRow: number): SnakeRow[]
     const isOdd = rowIdx % 2 === 1;
     const slice = Array.from(board.slice(i, i + tilesPerRow));
     rows.push({
-      // Odd rows go right-to-left: reverse order AND flip each tile so pips chain correctly
+      // Odd rows: reverse order AND flip tile halves so chain reads correctly right-to-left
       tiles: isOdd ? [...slice].reverse() : slice,
       flipped: isOdd,
       align: isOdd ? 'right' : 'left',
@@ -27,6 +29,9 @@ function buildSnakeRows(board: readonly Tile[], tilesPerRow: number): SnakeRow[]
   }
   return rows;
 }
+
+// Each board slot is one landscape tile wide (doubles are portrait but narrow)
+const TILE_SLOT = TILE_SIZES.md.half * 2 + TILE_SIZES.md.gap + 4;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -37,13 +42,10 @@ interface BoardProps {
   onPickSide: (side: BoardSide) => void;
 }
 
-const TILE_SLOT = TILE_SIZES.md.half * 2 + TILE_SIZES.md.gap + 4; // tile width + gap
-
 export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [tilesPerRow, setTilesPerRow] = useState(4);
 
-  // Measure container to determine snake row width
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -58,7 +60,7 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
   if (board.length === 0) {
     return (
       <div ref={containerRef} className="flex-1 flex items-center justify-center">
-        <p className="text-white/20 text-sm font-semibold tracking-widest uppercase">
+        <p className="text-white/20 text-sm font-semibold tracking-widest uppercase select-none">
           Esperando la salida…
         </p>
       </div>
@@ -66,14 +68,13 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
   }
 
   const rows = buildSnakeRows(board, tilesPerRow);
-  const tileH = TILE_SIZES.md.half; // landscape tile height
 
   return (
     <div
       ref={containerRef}
-      className="flex-1 flex flex-col justify-center overflow-y-auto no-scrollbar px-3 py-2 relative"
+      className="flex-1 flex flex-col justify-center overflow-y-auto no-scrollbar px-3 py-3 relative"
     >
-      {/* Side-pick overlay — floating buttons on open ends */}
+      {/* Side-pick overlay: floating buttons at open ends */}
       {choosingSide && openEnds && (
         <div className="absolute inset-0 z-20 flex items-center justify-between px-2 pointer-events-none">
           <button
@@ -92,30 +93,35 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
       )}
 
       {/* Snake rows */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1.5">
         {rows.map((row, ri) => (
           <div
             key={ri}
             className={clsx(
               'flex items-center gap-1',
               row.align === 'right' ? 'justify-end' : 'justify-start',
-              choosingSide && 'opacity-70',
+              choosingSide && 'opacity-60',
             )}
-            style={{ minHeight: tileH + 2 }}
           >
             {row.tiles.map((tile, ti) => {
-              // Highlight the exposed ends when choosing a side
-              const globalIdx = ri % 2 === 0 ? ri * tilesPerRow + ti : ri * tilesPerRow + (row.tiles.length - 1 - ti);
+              // Recover original board index to detect exposed ends
+              const globalIdx =
+                row.flipped
+                  ? ri * tilesPerRow + (row.tiles.length - 1 - ti)
+                  : ri * tilesPerRow + ti;
               const isFirstTile = globalIdx === 0;
               const isLastTile = globalIdx === board.length - 1;
               const isExposed = choosingSide && (isFirstTile || isLastTile);
+              const dbl = isDouble(tile);
 
               return (
                 <DominoTile
                   key={ti}
                   tile={tile}
-                  orientation="h"
-                  flipped={row.flipped}
+                  // Doubles stand perpendicular to the chain (portrait in a horizontal chain)
+                  orientation={dbl ? 'v' : 'h'}
+                  // Doubles don't need flipping — both halves are identical
+                  flipped={dbl ? false : row.flipped}
                   size="md"
                   state={isExposed ? 'selected' : 'normal'}
                 />
@@ -125,9 +131,9 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
         ))}
       </div>
 
-      {/* Open-ends legend */}
+      {/* Open-ends hint */}
       {!choosingSide && openEnds && (
-        <div className="flex justify-between text-white/30 text-xs font-mono mt-1 px-0.5">
+        <div className="flex justify-between text-white/25 text-xs font-mono mt-1.5 px-0.5 select-none">
           <span>← {openEnds[0]}</span>
           <span>{openEnds[1]} →</span>
         </div>

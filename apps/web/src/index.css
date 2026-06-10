@@ -29,3 +29,13 @@ html, body, #root {
     radial-gradient(ellipse at 20% 30%, rgba(58,122,156,0.25) 0%, transparent 60%),
     radial-gradient(ellipse at 80% 70%, rgba(26,63,84,0.3) 0%, transparent 60%);
 }
+
+/* Table playing surface — distinct from the surrounding felt */
+.table-surface {
+  background: radial-gradient(ellipse at 50% 40%, #3d8598 0%, #1e4f62 100%);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.14),
+    inset 0 -2px 6px rgba(0,0,0,0.25);
+  border: 1px solid rgba(255,255,255,0.18);
+}
