@@ -1,0 +1,20 @@
+{
+  "name": "@dominoes/engine",
+  "version": "0.1.0",
+  "description": "Pure TypeScript game engine for Cuban double-9 dominoes. Zero runtime dependencies. Server-authoritative by design.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sim": "vitest run --reporter=dot && npx tsx src/cli-sim.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}

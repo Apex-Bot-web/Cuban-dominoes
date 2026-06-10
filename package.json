@@ -1,0 +1,14 @@
+{
+  "name": "cuban-dominoes",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cuban double-9 dominoes — multiplayer web app monorepo",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspace=@dominoes/engine",
+    "sim": "npm run sim --workspace=@dominoes/engine"
+  }
+}
