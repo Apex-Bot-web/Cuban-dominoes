@@ -9,7 +9,7 @@ import type {
   Tile,
 } from './types.js';
 import { teamOf } from './types.js';
-import { fullSet, handPips, sameTile, tileInHand } from './tiles.js';
+import { fullSet, handPips, tileInHand } from './tiles.js';
 import { shuffleInPlace } from './rng.js';
 
 // ---------------------------------------------------------------------------
