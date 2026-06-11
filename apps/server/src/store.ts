@@ -20,6 +20,7 @@ import type {
   RoomView,
   Seat,
   SeatSlot,
+  Team,
 } from './types.js';
 
 // ── In-memory state ───────────────────────────────────────────────────────────
@@ -105,7 +106,8 @@ export function createRoom(
     code,
     hostPlayerId: playerId,
     slots: [slot, null, null, null],
-    config: { ...DEFAULT_CONFIG, ...config },
+    // chooseSalida defaults true on this server — winning team picks who leads
+    config: { ...DEFAULT_CONFIG, chooseSalida: true, ...config },
     status: 'waiting',
   };
   rooms.set(code, room);
@@ -270,16 +272,56 @@ export function applyAutoAction(code: string, seat: Seat): ActionResult {
   return { ok: true, room, handOver, matchOver };
 }
 
-export function advanceHand(code: string): { ok: true; room: Room } | { ok: false; error: string } {
+export function advanceHand(
+  code: string,
+  salida?: Seat,
+): { ok: true; room: Room } | { ok: false; error: string } {
   const room = rooms.get(code);
   if (!room?.match) return { ok: false, error: 'No hay partida' };
   if (!room.match.hand.result) return { ok: false, error: 'La mano no ha terminado' };
 
-  const result = startNextHand(room.match);
+  const result = startNextHand(room.match, salida);
   if (!result.ok) return { ok: false, error: result.error };
 
   room.match = result.match;
+  delete room.choosingSalida;
   return { ok: true, room };
+}
+
+export function enterChoosingState(
+  code: string,
+  winnerTeam: Team,
+  seats: [Seat, Seat],
+  defaultSalida: Seat,
+): Room | undefined {
+  const room = rooms.get(code);
+  if (!room) return undefined;
+  room.choosingSalida = { winnerTeam, seats, defaultSalida };
+  return room;
+}
+
+export function setChosenSalida(
+  code: string,
+  playerId: string,
+  seat: Seat,
+): { ok: true; seat: Seat } | { ok: false; error: string } {
+  const room = rooms.get(code);
+  if (!room?.choosingSalida) return { ok: false, error: 'No se está eligiendo salida' };
+
+  const { winnerTeam, seats } = room.choosingSalida;
+
+  // Validate player is on the winning team
+  const playerSeat = room.slots.findIndex(
+    (s) => s?.type === 'human' && s.playerId === playerId,
+  ) as Seat | -1;
+  if (playerSeat === -1) return { ok: false, error: 'Jugador no encontrado' };
+  if (!seats.includes(playerSeat)) return { ok: false, error: 'No estás en el equipo ganador' };
+  if (!seats.includes(seat)) {
+    return { ok: false, error: `El asiento ${seat} no pertenece al equipo ganador` };
+  }
+
+  void winnerTeam; // used for validation via seats check above
+  return { ok: true, seat };
 }
 
 // ── Connection events ─────────────────────────────────────────────────────────

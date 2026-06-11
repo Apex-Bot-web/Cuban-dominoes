@@ -11,15 +11,17 @@ import {
   applyPlayerAction,
   createRoom,
   disconnectSocket,
+  enterChoosingState,
   getGameViews,
   getRoom,
   getRoomView,
   getSocketInfo,
   joinRoom,
   setBot,
+  setChosenSalida,
   startGame,
 } from './store.js';
-import type { Action, BotLevel, GameConfig, Room, Seat } from './types.js';
+import type { Action, BotLevel, GameConfig, Room, Seat, Team } from './types.js';
 
 // ── Express + Socket.IO setup ─────────────────────────────────────────────────
 
@@ -102,6 +104,7 @@ function broadcastGameState(room: Room): void {
 const TURN_TIMEOUT_MS = 30_000;
 const BOT_THINK_MS = 750;
 const HAND_ADVANCE_MS = 8_000;
+const CHOOSE_SALIDA_TIMEOUT_MS = 60_000;
 
 function handleActionResult(
   code: string,
@@ -117,11 +120,49 @@ function handleActionResult(
   }
 
   if (handOver) {
+    const result = room.match?.hand.result;
+    const winnerTeam = result?.winnerTeam;
+
+    // chooseSalida: let winning team pick who leads — but only if a human is on that team
+    if (
+      room.config.chooseSalida &&
+      winnerTeam !== undefined &&
+      result?.type !== undefined
+    ) {
+      // tied tranque keeps same salida automatically — no choice needed
+      const isTiedTranque = result.type === 'tranque' && result.tie;
+      if (!isTiedTranque) {
+        const teamSeats = [0, 1, 2, 3].filter(
+          (s) => (s % 2) === winnerTeam,
+        ) as [Seat, Seat];
+        const hasHuman = teamSeats.some((s) => {
+          const slot = room.slots[s];
+          return slot?.type === 'human' && slot.connected;
+        });
+
+        if (hasHuman) {
+          const defaultSalida = room.match!.nextSalida;
+          enterChoosingState(code, winnerTeam as Team, teamSeats, defaultSalida);
+          broadcastChoosingState(room, winnerTeam as Team, teamSeats);
+          // Auto-advance with default salida if nobody picks in time
+          setTimer(code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(code));
+          return;
+        }
+      }
+    }
+
     setTimer(code, HAND_ADVANCE_MS, () => doAdvanceHand(code));
     return;
   }
 
   scheduleNextTurn(code);
+}
+
+function broadcastChoosingState(room: Room, winnerTeam: Team, seats: [Seat, Seat]): void {
+  for (const slot of room.slots) {
+    if (!slot || slot.type !== 'human' || !slot.connected) continue;
+    io.to(slot.socketId).emit('game:choosing-salida', { winnerTeam, seats });
+  }
 }
 
 function scheduleNextTurn(code: string): void {
@@ -152,9 +193,9 @@ function doAutoTurn(code: string, seat: Seat): void {
   handleActionResult(code, result.room, result.handOver, result.matchOver);
 }
 
-function doAdvanceHand(code: string): void {
+function doAdvanceHand(code: string, salida?: Seat): void {
   clearTimer(code);
-  const result = advanceHand(code);
+  const result = advanceHand(code, salida);
   if (!result.ok) return;
   broadcastGameState(result.room);
   scheduleNextTurn(code);
@@ -240,6 +281,18 @@ io.on('connection', (socket) => {
       return;
     }
     handleActionResult(info.code, result.room, result.handOver, result.matchOver);
+  });
+
+  // ── game:choose-salida ───────────────────────────────────────────────────────
+  socket.on('game:choose-salida', ({ seat }: { seat: Seat }) => {
+    const info = getSocketInfo(socket.id);
+    if (!info) return;
+    const result = setChosenSalida(info.code, playerId, seat);
+    if (!result.ok) {
+      socket.emit('error', { message: result.error });
+      return;
+    }
+    doAdvanceHand(info.code, result.seat);
   });
 
   // ── game:next-hand ───────────────────────────────────────────────────────────

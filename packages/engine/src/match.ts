@@ -113,12 +113,17 @@ function tranqueSalida(hand: { hands: Tile[][] }, winnerTeam: Team): Seat {
   return pips(a) <= pips(b) ? a : b;
 }
 
-/** Deal the next hand. Errors if the current hand is unresolved or the match is over. */
-export function startNextHand(match: MatchState): MatchApplyResult {
+/**
+ * Deal the next hand. Errors if the current hand is unresolved or the match is over.
+ * Pass `salida` to override `match.nextSalida` (used when `config.chooseSalida` is true
+ * and the winning team has picked who leads).
+ */
+export function startNextHand(match: MatchState, salida?: Seat): MatchApplyResult {
   if (match.winnerTeam !== undefined) return { ok: false, error: 'match-finished' };
   if (!match.hand.result) return { ok: false, error: 'hand-in-progress' };
 
-  const { hand, rngState } = createHand(match.config, match.nextSalida, match.rngState);
+  const nextSalida = salida ?? match.nextSalida;
+  const { hand, rngState } = createHand(match.config, nextSalida, match.rngState);
   return {
     ok: true,
     match: {

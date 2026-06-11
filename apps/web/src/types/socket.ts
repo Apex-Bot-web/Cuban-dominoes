@@ -1,6 +1,11 @@
-import type { Action, BotLevel, GameConfig, PlayerView, Seat } from '@dominoes/engine';
+import type { Action, BotLevel, GameConfig, PlayerView, Seat, Team } from '@dominoes/engine';
 
-export type { Action, BotLevel, GameConfig, PlayerView, Seat };
+export type { Action, BotLevel, GameConfig, PlayerView, Seat, Team };
+
+export interface ChoosingAboutSalida {
+  winnerTeam: Team;
+  seats: [Seat, Seat];
+}
 
 export interface RoomSeatView {
   displayName: string;

@@ -1,4 +1,5 @@
 import type { Seat } from '@dominoes/engine';
+import { partnerOf } from '@dominoes/engine';
 import { Board } from '../components/Board';
 import { MatchOverScreen } from '../components/MatchOverScreen';
 import { OpponentSeat } from '../components/OpponentSeat';
@@ -28,8 +29,12 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     playSide,
     cancelSelection,
     nextHand,
+    pickSalida,
     newMatch,
   } = useGame('duro');
+
+  const HUMAN_SEAT: Seat = 0;
+  const PARTNER_SEAT: Seat = partnerOf(HUMAN_SEAT);
 
   const { tileCounts, turn, passHistory, teamScores, targetScore, handNumber, sleepingCount } = view;
   const isMyTurn = turn === 0 && phase === 'playing';
@@ -132,6 +137,40 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           onNewMatch={newMatch}
           onLeave={onLeave}
         />
+      )}
+
+      {/* ¿Quién sale? — solo mode salida picker (human team won) */}
+      {phase === 'choosing-salida' && (
+        <div className="absolute inset-0 z-25 flex items-end bg-black/50 backdrop-blur-sm">
+          <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-8">
+            <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">
+              ¡Ganaron la mano!
+            </p>
+            <p className="text-white font-black text-xl mb-4">¿Quién sale?</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => pickSalida(HUMAN_SEAT)}
+                className="flex items-center gap-3 bg-white/10 hover:bg-green-500/20 border border-white/15 hover:border-green-500/40 rounded-2xl px-4 py-4 text-left transition-all active:scale-95"
+              >
+                <span className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-300 font-black text-sm">
+                  Tú
+                </span>
+                <p className="text-white font-black">Yo salgo</p>
+                <span className="ml-auto text-white/30 text-lg">→</span>
+              </button>
+              <button
+                onClick={() => pickSalida(PARTNER_SEAT)}
+                className="flex items-center gap-3 bg-white/10 hover:bg-green-500/20 border border-white/15 hover:border-green-500/40 rounded-2xl px-4 py-4 text-left transition-all active:scale-95"
+              >
+                <span className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white/60 font-black text-sm">
+                  S
+                </span>
+                <p className="text-white font-black">Sale mi socio</p>
+                <span className="ml-auto text-white/30 text-lg">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

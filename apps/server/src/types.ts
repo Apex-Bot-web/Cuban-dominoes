@@ -5,9 +5,10 @@ import type {
   MatchState,
   PlayerView,
   Seat,
+  Team,
 } from '@dominoes/engine';
 
-export type { Action, BotLevel, GameConfig, MatchState, PlayerView, Seat };
+export type { Action, BotLevel, GameConfig, MatchState, PlayerView, Seat, Team };
 
 // ── Server-side room state ────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ export interface Room {
   config: GameConfig;
   status: 'waiting' | 'playing' | 'finished';
   match?: MatchState;
+  /** Set while waiting for the winning team to pick who leads next hand. */
+  choosingSalida?: { winnerTeam: Team; seats: [Seat, Seat]; defaultSalida: Seat };
 }
 
 // ── Client-safe room view ─────────────────────────────────────────────────────

@@ -45,6 +45,11 @@ export interface GameConfig {
    * 'all': opponents + the winner's partner's leftover pips.
    */
   scorePips: 'opponents' | 'all';
+  /**
+   * If true, after each hand the winning team chooses which partner leads (la salida).
+   * If false, the player who dominoed (or held fewer pips in a tranque) leads automatically.
+   */
+  chooseSalida: boolean;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -54,6 +59,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   firstLead: 'double-max',
   tieTranque: 'no-score',
   scorePips: 'opponents',
+  chooseSalida: false,
 };
 
 // ---------------------------------------------------------------------------

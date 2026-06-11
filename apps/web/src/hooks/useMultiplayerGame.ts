@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { legalMoves, sameTile } from '@dominoes/engine';
 import type { BoardSide, HandState, Tile } from '@dominoes/engine';
 import type { Socket } from 'socket.io-client';
-import type { PlayerView } from '../types/socket';
+import type { ChoosingAboutSalida, PlayerView, Seat } from '../types/socket';
 
 export type GamePhase = 'playing' | 'hand-over' | 'match-over';
 
@@ -30,10 +30,12 @@ export interface UseMultiplayerGameReturn {
   selectedTile: Tile | null;
   choosingSide: boolean;
   playableTiles: Set<string>;
+  choosingSalida: ChoosingAboutSalida | null;
   pass: () => void;
   selectTile: (tile: Tile) => void;
   playSide: (side: BoardSide) => void;
   cancelSelection: () => void;
+  pickSalida: (seat: Seat) => void;
   nextHand: () => void;
 }
 
@@ -44,6 +46,7 @@ export function useMultiplayerGame(
   const [view, setView] = useState<PlayerView>(initialView);
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [choosingSide, setChoosingSide] = useState(false);
+  const [choosingSalida, setChoosingSalida] = useState<ChoosingAboutSalida | null>(null);
 
   const phase = useMemo<GamePhase>(() => {
     if (view.matchWinnerTeam !== undefined) return 'match-over';
@@ -56,9 +59,17 @@ export function useMultiplayerGame(
       setView(next);
       setSelectedTile(null);
       setChoosingSide(false);
+      setChoosingSalida(null);
+    }
+    function onChoosingSalida(payload: ChoosingAboutSalida) {
+      setChoosingSalida(payload);
     }
     socket.on('game:state', onGameState);
-    return () => { socket.off('game:state', onGameState); };
+    socket.on('game:choosing-salida', onChoosingSalida);
+    return () => {
+      socket.off('game:state', onGameState);
+      socket.off('game:choosing-salida', onChoosingSalida);
+    };
   }, [socket]);
 
   const mySeat = view.seat;
@@ -108,6 +119,14 @@ export function useMultiplayerGame(
     socket.emit('game:action', { type: 'pass', seat: mySeat });
   }, [socket, phase, view.turn, mySeat]);
 
+  const pickSalida = useCallback(
+    (seat: Seat) => {
+      socket.emit('game:choose-salida', { seat });
+      setChoosingSalida(null);
+    },
+    [socket],
+  );
+
   const nextHand = useCallback(() => {
     socket.emit('game:next-hand', {});
   }, [socket]);
@@ -118,10 +137,12 @@ export function useMultiplayerGame(
     selectedTile,
     choosingSide,
     playableTiles,
+    choosingSalida,
     pass,
     selectTile,
     playSide,
     cancelSelection,
+    pickSalida,
     nextHand,
   };
 }

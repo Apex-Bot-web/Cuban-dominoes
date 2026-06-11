@@ -30,10 +30,12 @@ export function MultiplayerGameScreen({
     selectedTile,
     choosingSide,
     playableTiles,
+    choosingSalida,
     pass,
     selectTile,
     playSide,
     cancelSelection,
+    pickSalida,
     nextHand,
   } = useMultiplayerGame(socket, initialView);
 
@@ -184,6 +186,48 @@ export function MultiplayerGameScreen({
           onNewMatch={handlePlayAgain}
           onLeave={onLeave}
         />
+      )}
+
+      {/* ¿Quién sale? — salida picker after a hand is won */}
+      {choosingSalida && (
+        <div className="absolute inset-0 z-25 flex items-end bg-black/50 backdrop-blur-sm">
+          <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-safe pb-6">
+            <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">
+              {choosingSalida.seats.includes(mySeat) ? '¡Tu equipo ganó!' : 'El equipo ganador elige...'}
+            </p>
+            <p className="text-white font-black text-xl mb-4">¿Quién sale?</p>
+
+            {choosingSalida.seats.includes(mySeat) ? (
+              <div className="flex flex-col gap-3">
+                {choosingSalida.seats.map((seat) => (
+                  <button
+                    key={seat}
+                    onClick={() => pickSalida(seat)}
+                    className="flex items-center gap-3 bg-white/10 hover:bg-green-500/20 border border-white/15 hover:border-green-500/40 rounded-2xl px-4 py-4 text-left transition-all active:scale-95"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-300 font-black text-sm">
+                      {seat}
+                    </span>
+                    <div>
+                      <p className="text-white font-black">{seatName(seat)}</p>
+                      {seat === mySeat && (
+                        <p className="text-green-400/70 text-xs">Tú</p>
+                      )}
+                    </div>
+                    <span className="ml-auto text-white/30 text-lg">→</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 py-4">
+                <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                <p className="text-white/50 text-sm">
+                  Esperando que el equipo ganador elija quién sale…
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

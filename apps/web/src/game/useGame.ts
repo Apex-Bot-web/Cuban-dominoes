@@ -16,7 +16,7 @@ import {
   type Seat,
 } from '@dominoes/engine';
 
-export type GamePhase = 'playing' | 'hand-over' | 'match-over';
+export type GamePhase = 'playing' | 'hand-over' | 'choosing-salida' | 'match-over';
 
 const HUMAN: Seat = 0;
 
@@ -32,6 +32,7 @@ export interface UseGameReturn {
   playSide: (side: BoardSide) => void;
   cancelSelection: () => void;
   nextHand: () => void;
+  pickSalida: (seat: Seat) => void;
   newMatch: () => void;
 }
 
@@ -40,7 +41,7 @@ function tileKey(t: Tile): string {
 }
 
 export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
-  const [match, setMatch] = useState<MatchState>(() => createMatch());
+  const [match, setMatch] = useState<MatchState>(() => createMatch({ chooseSalida: true }));
   const [phase, setPhase] = useState<GamePhase>('playing');
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [choosingSide, setChoosingSide] = useState(false);
@@ -132,6 +133,18 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
   }, []);
 
   const nextHand = useCallback(() => {
+    if (!match.hand.result) return;
+    const handResult = match.hand.result;
+    const winnerTeam = handResult.winnerTeam;
+    const isTiedTranque = handResult.type === 'tranque' && handResult.tie;
+
+    // If human team won and chooseSalida is on, let the human pick first
+    if (match.config.chooseSalida && winnerTeam === 0 && !isTiedTranque) {
+      setPhase('choosing-salida');
+      return;
+    }
+
+    // Bot team won, or no choice needed — advance with default salida
     const result = startNextHand(match);
     if (!result.ok) return;
     setMatch(result.match);
@@ -140,8 +153,17 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     setChoosingSide(false);
   }, [match]);
 
+  const pickSalida = useCallback((seat: Seat) => {
+    const result = startNextHand(match, seat);
+    if (!result.ok) return;
+    setMatch(result.match);
+    setPhase('playing');
+    setSelectedTile(null);
+    setChoosingSide(false);
+  }, [match]);
+
   const newMatch = useCallback(() => {
-    setMatch(createMatch());
+    setMatch(createMatch({ chooseSalida: true }));
     setPhase('playing');
     setSelectedTile(null);
     setChoosingSide(false);
@@ -160,6 +182,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     playSide,
     cancelSelection,
     nextHand,
+    pickSalida,
     newMatch,
   };
 }
