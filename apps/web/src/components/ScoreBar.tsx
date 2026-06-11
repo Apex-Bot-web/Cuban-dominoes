@@ -4,15 +4,21 @@ interface ScoreBarProps {
   handNumber: number;
   sleepingCount: number;
   botThinking: boolean;
+  onLeave?: () => void;
 }
 
-export function ScoreBar({ teamScores, targetScore, handNumber, sleepingCount, botThinking }: ScoreBarProps) {
+export function ScoreBar({ teamScores, targetScore, handNumber, sleepingCount, botThinking, onLeave }: ScoreBarProps) {
   const [t0, t1] = teamScores;
   const pct0 = Math.min(100, (t0 / targetScore) * 100);
   const pct1 = Math.min(100, (t1 / targetScore) * 100);
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-felt-dark/80 backdrop-blur border-b border-white/10 shrink-0 pt-safe">
+      {onLeave && (
+        <button onClick={onLeave} className="text-white/30 hover:text-white text-xs font-bold transition-colors shrink-0">
+          ←
+        </button>
+      )}
       {/* Team 0 — us */}
       <div className="flex flex-col items-center min-w-[52px]">
         <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/80">Nosotros</span>

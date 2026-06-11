@@ -15,10 +15,12 @@ interface OpponentSeatProps {
   passHistory: readonly PassRecord[];
   /** 'top' = partner above the table, 'side' = left/right flanking the table */
   position: 'top' | 'side';
+  /** Override the default seat label with a player's display name */
+  displayName?: string;
 }
 
-export function OpponentSeat({ seat, tileCount, isActive, passHistory, position }: OpponentSeatProps) {
-  const name = SEAT_LABEL[seat] ?? `Seat ${seat}`;
+export function OpponentSeat({ seat, tileCount, isActive, passHistory, position, displayName }: OpponentSeatProps) {
+  const name = displayName ?? SEAT_LABEL[seat] ?? `Seat ${seat}`;
   const justPassed = passHistory.length > 0 && passHistory[passHistory.length - 1]?.seat === seat;
 
   // ── Top (partner, Socio) ─────────────────────────────────────────────────

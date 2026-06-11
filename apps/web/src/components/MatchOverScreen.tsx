@@ -5,9 +5,10 @@ interface MatchOverScreenProps {
   teamScores: readonly [number, number];
   handNumber: number;
   onNewMatch: () => void;
+  onLeave?: () => void;
 }
 
-export function MatchOverScreen({ winnerTeam, teamScores, handNumber, onNewMatch }: MatchOverScreenProps) {
+export function MatchOverScreen({ winnerTeam, teamScores, handNumber, onNewMatch, onLeave }: MatchOverScreenProps) {
   const weWon = winnerTeam === 0;
 
   return (
@@ -46,13 +47,21 @@ export function MatchOverScreen({ winnerTeam, teamScores, handNumber, onNewMatch
         </div>
 
         {/* CTA */}
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 flex flex-col gap-2">
           <button
             className="w-full bg-felt-light hover:bg-felt text-white font-black text-lg rounded-2xl py-4 transition-colors active:scale-95"
             onClick={onNewMatch}
           >
             Jugar de nuevo
           </button>
+          {onLeave && (
+            <button
+              className="w-full text-white/40 hover:text-white/70 text-sm font-bold py-2 transition-colors"
+              onClick={onLeave}
+            >
+              Salir
+            </button>
+          )}
         </div>
       </div>
     </div>
