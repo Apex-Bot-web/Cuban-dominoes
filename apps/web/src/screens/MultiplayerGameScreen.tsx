@@ -5,9 +5,11 @@ import type { Socket } from 'socket.io-client';
 import { Board } from '../components/Board';
 import { MatchOverScreen } from '../components/MatchOverScreen';
 import { OpponentSeat } from '../components/OpponentSeat';
+import { PegaoFlash } from '../components/PegaoFlash';
 import { PlayerHand } from '../components/PlayerHand';
 import { ScoreBar } from '../components/ScoreBar';
 import { ScoreScreen } from '../components/ScoreScreen';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
 import type { PlayerView, RoomView } from '../types/socket';
 
@@ -31,6 +33,7 @@ export function MultiplayerGameScreen({
     choosingSide,
     playableTiles,
     choosingSalida,
+    showPegao,
     pass,
     selectTile,
     playSide,
@@ -38,6 +41,8 @@ export function MultiplayerGameScreen({
     pickSalida,
     nextHand,
   } = useMultiplayerGame(socket, initialView);
+
+  const { muted, toggleMute } = useBackgroundMusic();
 
   // Seat remapping: my seat is always at the bottom
   const mySeat = view.seat;
@@ -78,6 +83,8 @@ export function MultiplayerGameScreen({
         sleepingCount={sleepingCount}
         botThinking={false}
         onLeave={onLeave}
+        muted={muted}
+        onToggleMute={toggleMute}
       />
 
       {serverError && (
@@ -187,6 +194,8 @@ export function MultiplayerGameScreen({
           onLeave={onLeave}
         />
       )}
+
+      <PegaoFlash show={showPegao} />
 
       {/* ¿Quién sale? — salida picker after a hand is won */}
       {choosingSalida && (

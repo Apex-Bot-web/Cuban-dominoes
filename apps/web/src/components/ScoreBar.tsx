@@ -5,9 +5,11 @@ interface ScoreBarProps {
   sleepingCount: number;
   botThinking: boolean;
   onLeave?: () => void;
+  muted?: boolean;
+  onToggleMute?: () => void;
 }
 
-export function ScoreBar({ teamScores, targetScore, handNumber, sleepingCount, botThinking, onLeave }: ScoreBarProps) {
+export function ScoreBar({ teamScores, targetScore, handNumber, sleepingCount, botThinking, onLeave, muted, onToggleMute }: ScoreBarProps) {
   const [t0, t1] = teamScores;
   const pct0 = Math.min(100, (t0 / targetScore) * 100);
   const pct1 = Math.min(100, (t1 / targetScore) * 100);
@@ -61,6 +63,16 @@ export function ScoreBar({ teamScores, targetScore, handNumber, sleepingCount, b
           <span className="text-yellow-400 text-[10px] font-black tracking-widest animate-pulse">●●●</span>
         )}
       </div>
+
+      {onToggleMute && (
+        <button
+          onClick={onToggleMute}
+          className="text-white/30 hover:text-white/70 text-base transition-colors shrink-0"
+          title={muted ? 'Activar música' : 'Silenciar música'}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
+      )}
     </div>
   );
 }

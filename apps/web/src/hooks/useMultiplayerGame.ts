@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { legalMoves, sameTile } from '@dominoes/engine';
 import type { BoardSide, HandState, Tile } from '@dominoes/engine';
 import type { Socket } from 'socket.io-client';
@@ -31,6 +31,7 @@ export interface UseMultiplayerGameReturn {
   choosingSide: boolean;
   playableTiles: Set<string>;
   choosingSalida: ChoosingAboutSalida | null;
+  showPegao: boolean;
   pass: () => void;
   selectTile: (tile: Tile) => void;
   playSide: (side: BoardSide) => void;
@@ -47,6 +48,20 @@ export function useMultiplayerGame(
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [choosingSide, setChoosingSide] = useState(false);
   const [choosingSalida, setChoosingSalida] = useState<ChoosingAboutSalida | null>(null);
+  const [showPegao, setShowPegao] = useState(false);
+  const prevCountsRef = useRef(initialView.tileCounts);
+
+  // PEGAO: flash when any player plays their last tile
+  useEffect(() => {
+    const prev = prevCountsRef.current;
+    const curr = view.tileCounts;
+    const hit = ([0, 1, 2, 3] as const).some((s) => (prev[s] ?? 0) > 0 && (curr[s] ?? 0) === 0);
+    prevCountsRef.current = curr;
+    if (!hit) return;
+    setShowPegao(true);
+    const t = setTimeout(() => setShowPegao(false), 1600);
+    return () => clearTimeout(t);
+  }, [view.tileCounts]);
 
   const phase = useMemo<GamePhase>(() => {
     if (view.matchWinnerTeam !== undefined) return 'match-over';
@@ -138,6 +153,7 @@ export function useMultiplayerGame(
     choosingSide,
     playableTiles,
     choosingSalida,
+    showPegao,
     pass,
     selectTile,
     playSide,

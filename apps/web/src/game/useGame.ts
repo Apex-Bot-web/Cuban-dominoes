@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   createMatch,
   applyAction,
@@ -28,6 +28,7 @@ export interface UseGameReturn {
   choosingSide: boolean;
   botThinking: boolean;
   playableTiles: Set<string>;
+  showPegao: boolean;
   selectTile: (tile: Tile) => void;
   playSide: (side: BoardSide) => void;
   cancelSelection: () => void;
@@ -48,6 +49,20 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
   const [botThinking, setBotThinking] = useState(false);
 
   const view = useMemo(() => playerView(match, HUMAN), [match]);
+
+  // PEGAO: flash when any player plays their last tile
+  const prevCountsRef = useRef(view.tileCounts);
+  const [showPegao, setShowPegao] = useState(false);
+  useEffect(() => {
+    const prev = prevCountsRef.current;
+    const curr = view.tileCounts;
+    const hit = ([0, 1, 2, 3] as const).some((s) => (prev[s] ?? 0) > 0 && (curr[s] ?? 0) === 0);
+    prevCountsRef.current = curr;
+    if (!hit) return;
+    setShowPegao(true);
+    const t = setTimeout(() => setShowPegao(false), 1600);
+    return () => clearTimeout(t);
+  }, [view.tileCounts]);
 
   const playableTiles = useMemo<Set<string>>(() => {
     if (phase !== 'playing' || match.hand.turn !== HUMAN || match.hand.result) {
@@ -178,6 +193,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     choosingSide,
     botThinking,
     playableTiles,
+    showPegao,
     selectTile,
     playSide,
     cancelSelection,

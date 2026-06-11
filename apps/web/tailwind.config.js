@@ -30,9 +30,16 @@ export default {
           '0%, 100%': { boxShadow: '0 0 0 0 rgba(251,191,36,0.5)' },
           '50%':       { boxShadow: '0 0 0 6px rgba(251,191,36,0)' },
         },
+        'pegao': {
+          '0%':   { transform: 'scale(0.3) rotate(-4deg)', opacity: '0' },
+          '12%':  { transform: 'scale(1.15) rotate(2deg)', opacity: '1' },
+          '70%':  { transform: 'scale(1) rotate(0deg)',    opacity: '1' },
+          '100%': { transform: 'scale(1.08) rotate(0deg)', opacity: '0' },
+        },
       },
       animation: {
         'pulse-ring': 'pulse-ring 1.2s ease-in-out infinite',
+        'pegao': 'pegao 1.6s cubic-bezier(0.22,1,0.36,1) forwards',
       },
     },
   },

@@ -3,10 +3,12 @@ import { partnerOf } from '@dominoes/engine';
 import { Board } from '../components/Board';
 import { MatchOverScreen } from '../components/MatchOverScreen';
 import { OpponentSeat } from '../components/OpponentSeat';
+import { PegaoFlash } from '../components/PegaoFlash';
 import { PlayerHand } from '../components/PlayerHand';
 import { ScoreBar } from '../components/ScoreBar';
 import { ScoreScreen } from '../components/ScoreScreen';
 import { useGame } from '../game/useGame';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 
 const LEFT_SEAT: Seat = 3;
 const TOP_SEAT: Seat = 2;
@@ -25,6 +27,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     choosingSide,
     botThinking,
     playableTiles,
+    showPegao,
     selectTile,
     playSide,
     cancelSelection,
@@ -32,6 +35,8 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     pickSalida,
     newMatch,
   } = useGame('duro');
+
+  const { muted, toggleMute } = useBackgroundMusic();
 
   const HUMAN_SEAT: Seat = 0;
   const PARTNER_SEAT: Seat = partnerOf(HUMAN_SEAT);
@@ -51,6 +56,8 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
         sleepingCount={sleepingCount}
         botThinking={botThinking}
         onLeave={onLeave}
+        muted={muted}
+        onToggleMute={toggleMute}
       />
 
       <div className="flex-1 flex flex-col min-h-0 px-2 pt-2 pb-1 gap-1.5">
@@ -138,6 +145,8 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           onLeave={onLeave}
         />
       )}
+
+      <PegaoFlash show={showPegao} />
 
       {/* ¿Quién sale? — solo mode salida picker (human team won) */}
       {phase === 'choosing-salida' && (
