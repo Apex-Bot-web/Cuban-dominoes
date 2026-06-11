@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import type { Seat } from '@dominoes/engine';
 import type { Socket } from 'socket.io-client';
 import { Board } from '../components/Board';
+import { ChatBubbles } from '../components/ChatBubbles';
 import { MatchOverScreen } from '../components/MatchOverScreen';
 import { OpponentSeat } from '../components/OpponentSeat';
 import { PegaoFlash } from '../components/PegaoFlash';
@@ -10,8 +11,11 @@ import { PlayerHand } from '../components/PlayerHand';
 import { ScoreBar } from '../components/ScoreBar';
 import { ScoreScreen } from '../components/ScoreScreen';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { useChatMessages } from '../hooks/useChatMessages';
 import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
 import type { PlayerView, RoomView } from '../types/socket';
+
+const EMOJIS = ['😂', '🔥', '👏', '🙌', '😤', '🎉', '💪', '😎', '🫡', '😢', '😮', '🤣', '🤌', '👀', '🤦', '🎊'];
 
 interface MultiplayerGameScreenProps {
   socket: Socket;
@@ -42,7 +46,9 @@ export function MultiplayerGameScreen({
     nextHand,
   } = useMultiplayerGame(socket, initialView);
 
-  const { muted, toggleMute } = useBackgroundMusic();
+  const { volume, setVolume } = useBackgroundMusic();
+  const { messages: chatMessages, sendEmoji } = useChatMessages(socket);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // Seat remapping: my seat is always at the bottom
   const mySeat = view.seat;
@@ -83,8 +89,8 @@ export function MultiplayerGameScreen({
         sleepingCount={sleepingCount}
         botThinking={false}
         onLeave={onLeave}
-        muted={muted}
-        onToggleMute={toggleMute}
+        volume={volume}
+        onVolumeChange={setVolume}
       />
 
       {serverError && (
@@ -136,33 +142,68 @@ export function MultiplayerGameScreen({
       <div className="shrink-0 bg-felt-dark/70 border-t border-white/10">
         <div
           className={clsx(
-            'flex items-center justify-center gap-1.5 py-1',
+            'flex items-center px-3 py-1 gap-2',
             isMyTurn && 'bg-white/5',
           )}
         >
-          {isMyTurn && (
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)]" />
-          )}
-          <span
-            className={
-              isMyTurn
-                ? 'text-[11px] font-black uppercase tracking-widest text-white'
-                : 'text-[11px] font-black uppercase tracking-widest text-white/40'
-            }
-          >
-            {seatName(mySeat)}
-          </span>
-          <span className="text-white/30 text-[10px] font-mono">
-            {view.myHand.length} fichas
-          </span>
-          {isMyTurn && playableTiles.size === 0 && (
-            <button
-              onClick={pass}
-              className="ml-2 bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-black uppercase tracking-widest rounded-lg px-3 py-1 transition-colors active:scale-95"
+          {/* Left: turn indicator + name + count */}
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            {isMyTurn && (
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)] shrink-0" />
+            )}
+            <span
+              className={clsx(
+                'text-[11px] font-black uppercase tracking-widest truncate',
+                isMyTurn ? 'text-white' : 'text-white/40',
+              )}
             >
-              Pasar →
-            </button>
-          )}
+              {seatName(mySeat)}
+            </span>
+            <span className="text-white/30 text-[10px] font-mono shrink-0">
+              {view.myHand.length} fichas
+            </span>
+          </div>
+
+          {/* Right: Pasar + emoji chat button */}
+          <div className="flex items-center gap-2 shrink-0">
+            {isMyTurn && playableTiles.size === 0 && (
+              <button
+                onClick={pass}
+                className="bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-black uppercase tracking-widest rounded-lg px-3 py-1 transition-colors active:scale-95"
+              >
+                Pasar →
+              </button>
+            )}
+
+            {/* Emoji picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowEmojiPicker((s) => !s)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-base transition-colors active:scale-90"
+                title="Enviar emoji"
+              >
+                💬
+              </button>
+              {showEmojiPicker && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
+                  <div className="absolute bottom-full right-0 mb-2 z-50 bg-felt-dark border border-white/15 rounded-2xl p-3 shadow-2xl">
+                    <div className="grid grid-cols-4 gap-2">
+                      {EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => { sendEmoji(emoji); setShowEmojiPicker(false); }}
+                          className="w-10 h-10 flex items-center justify-center text-2xl rounded-xl hover:bg-white/10 active:scale-90 transition-all"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         <PlayerHand
@@ -196,6 +237,7 @@ export function MultiplayerGameScreen({
       )}
 
       <PegaoFlash show={showPegao} />
+      <ChatBubbles messages={chatMessages} mySeat={mySeat} />
 
       {/* ¿Quién sale? — salida picker after a hand is won */}
       {choosingSalida && (

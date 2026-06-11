@@ -2,6 +2,13 @@ import type { Action, BotLevel, GameConfig, PlayerView, Seat, Team } from '@domi
 
 export type { Action, BotLevel, GameConfig, PlayerView, Seat, Team };
 
+export interface ChatMessage {
+  id: string;
+  seat: Seat;
+  displayName: string;
+  emoji: string;
+}
+
 export interface ChoosingAboutSalida {
   winnerTeam: Team;
   seats: [Seat, Seat];

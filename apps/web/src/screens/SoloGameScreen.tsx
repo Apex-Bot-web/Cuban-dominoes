@@ -36,7 +36,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     newMatch,
   } = useGame('duro');
 
-  const { muted, toggleMute } = useBackgroundMusic();
+  const { volume, setVolume } = useBackgroundMusic();
 
   const HUMAN_SEAT: Seat = 0;
   const PARTNER_SEAT: Seat = partnerOf(HUMAN_SEAT);
@@ -56,8 +56,8 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
         sleepingCount={sleepingCount}
         botThinking={botThinking}
         onLeave={onLeave}
-        muted={muted}
-        onToggleMute={toggleMute}
+        volume={volume}
+        onVolumeChange={setVolume}
       />
 
       <div className="flex-1 flex flex-col min-h-0 px-2 pt-2 pb-1 gap-1.5">

@@ -302,6 +302,23 @@ io.on('connection', (socket) => {
     doAdvanceHand(info.code);
   });
 
+  // ── chat:send ────────────────────────────────────────────────────────────────
+  socket.on('chat:send', ({ emoji }: { emoji: string }) => {
+    const info = getSocketInfo(socket.id);
+    if (!info) return;
+    const room = getRoom(info.code);
+    if (!room) return;
+    const slot = room.slots[info.seat];
+    if (!slot) return;
+    // Validate: must be a single emoji (simple length guard)
+    if (typeof emoji !== 'string' || emoji.length > 8) return;
+    io.to(info.code).emit('chat:message', {
+      seat: info.seat,
+      displayName: slot.displayName,
+      emoji,
+    });
+  });
+
   // ── disconnect ───────────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
     const info = disconnectSocket(socket.id);
