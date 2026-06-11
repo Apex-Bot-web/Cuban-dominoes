@@ -227,11 +227,18 @@ function scoreTranque(hand: HandState, closerSeat: Seat, config: GameConfig): Ha
   const pips = pipsBySeat(hand);
   const teamPips: [number, number] = [pips[0]! + pips[2]!, pips[1]! + pips[3]!];
 
+  // Cuban rule: the individual with the fewest pips wins it for their team.
+  // A tie only occurs when the minimum pip count is shared across both teams.
+  const minPip = Math.min(...pips);
+  const teamsWithMin = new Set(
+    ([0, 1, 2, 3] as Seat[]).filter((s) => pips[s]! === minPip).map((s) => teamOf(s)),
+  );
+
   let winnerTeam: Team | undefined;
   let tie = false;
-  if (teamPips[0] < teamPips[1]) winnerTeam = 0;
-  else if (teamPips[1] < teamPips[0]) winnerTeam = 1;
-  else {
+  if (teamsWithMin.size === 1) {
+    winnerTeam = [...teamsWithMin][0]!;
+  } else {
     tie = true;
     if (config.tieTranque === 'closer-loses') {
       winnerTeam = (1 - teamOf(closerSeat)) as Team;

@@ -71,12 +71,13 @@ describe('tranque scoring', () => {
     return state;
   }
 
-  it('four consecutive passes => tranque; lower-pip team scores opponents\u2019 pips', () => {
+  it('four consecutive passes => tranque; individual with fewest pips wins for their team', () => {
+    // Seat 0 has fewest pips (2) \u2192 team 0 wins, scores opponents' total (35)
     const h = blockedFixture([
-      [[1, 1]], // team 0: 2
-      [[9, 9]], // team 1: 18
-      [[2, 3]], // team 0: +5 => 7
-      [[8, 9]], // team 1: +17 => 35
+      [[1, 1]], // seat 0 (team 0): 2 pips \u2190 minimum
+      [[9, 9]], // seat 1 (team 1): 18
+      [[2, 3]], // seat 2 (team 0): 5
+      [[8, 9]], // seat 3 (team 1): 17
     ]);
     const done = runFourPasses(h);
     expect(done.result).toMatchObject({
@@ -84,6 +85,24 @@ describe('tranque scoring', () => {
       winnerTeam: 0,
       points: 35,
       teamPips: [7, 35],
+      tie: false,
+    });
+  });
+
+  it('individual rule: team with fewest-total-pips can still lose if opponent has the min individual', () => {
+    // Team 0 total: 10, Team 1 total: 16 \u2014 old team-total rule would give team 0 the win.
+    // But seat 1 (team 1) has 1 pip, the fewest individual \u2192 team 1 wins.
+    const h = blockedFixture([
+      [[2, 3]], // seat 0 (team 0): 5 pips
+      [[0, 1]], // seat 1 (team 1): 1 pip \u2190 minimum
+      [[2, 3]], // seat 2 (team 0): 5 pips
+      [[6, 9]], // seat 3 (team 1): 15 pips
+    ]);
+    const done = runFourPasses(h);
+    expect(done.result).toMatchObject({
+      type: 'tranque',
+      winnerTeam: 1,
+      points: 10, // team 0's total pips
       tie: false,
     });
   });
