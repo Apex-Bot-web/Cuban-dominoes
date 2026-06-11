@@ -30,6 +30,7 @@ export interface UseMultiplayerGameReturn {
   selectedTile: Tile | null;
   choosingSide: boolean;
   playableTiles: Set<string>;
+  pass: () => void;
   selectTile: (tile: Tile) => void;
   playSide: (side: BoardSide) => void;
   cancelSelection: () => void;
@@ -102,6 +103,11 @@ export function useMultiplayerGame(
     setChoosingSide(false);
   }, []);
 
+  const pass = useCallback(() => {
+    if (phase !== 'playing' || view.turn !== mySeat) return;
+    socket.emit('game:action', { type: 'pass', seat: mySeat });
+  }, [socket, phase, view.turn, mySeat]);
+
   const nextHand = useCallback(() => {
     socket.emit('game:next-hand', {});
   }, [socket]);
@@ -112,6 +118,7 @@ export function useMultiplayerGame(
     selectedTile,
     choosingSide,
     playableTiles,
+    pass,
     selectTile,
     playSide,
     cancelSelection,

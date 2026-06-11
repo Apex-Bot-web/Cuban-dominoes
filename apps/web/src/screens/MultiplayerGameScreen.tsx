@@ -30,6 +30,7 @@ export function MultiplayerGameScreen({
     selectedTile,
     choosingSide,
     playableTiles,
+    pass,
     selectTile,
     playSide,
     cancelSelection,
@@ -145,6 +146,14 @@ export function MultiplayerGameScreen({
           <span className="text-white/30 text-[10px] font-mono">
             {view.myHand.length} fichas
           </span>
+          {isMyTurn && playableTiles.size === 0 && (
+            <button
+              onClick={pass}
+              className="ml-2 bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-black uppercase tracking-widest rounded-lg px-3 py-1 transition-colors active:scale-95"
+            >
+              Pasar →
+            </button>
+          )}
         </div>
 
         <PlayerHand
