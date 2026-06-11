@@ -104,7 +104,8 @@ function broadcastGameState(room: Room): void {
 const TURN_TIMEOUT_MS = 30_000;
 const BOT_THINK_MS = 750;
 const HAND_ADVANCE_MS = 8_000;
-const SCORE_VIEW_MS = 5_000;
+const SCORE_VIEW_MS = 5_000;          // delay from "Siguiente mano" click to picker appearing
+const CHOOSE_SALIDA_AUTO_MS = 45_000; // auto-trigger picker if nobody clicks in time
 const CHOOSE_SALIDA_TIMEOUT_MS = 60_000;
 
 function handleActionResult(
@@ -143,13 +144,13 @@ function handleActionResult(
 
         if (hasHuman) {
           const defaultSalida = room.match!.nextSalida;
-          // Enter choosing state immediately so game:next-hand is blocked
-          // during the score-view window, but delay the picker broadcast so
-          // players have 5 seconds to review the ScoreScreen first.
-          enterChoosingState(code, winnerTeam as Team, teamSeats, defaultSalida);
-          setTimer(code, SCORE_VIEW_MS, () => {
+          // Park here — a player clicking "Siguiente mano →" (game:next-hand)
+          // starts the 5-second countdown before the picker appears. If nobody
+          // clicks within CHOOSE_SALIDA_AUTO_MS, show the picker automatically.
+          setTimer(code, CHOOSE_SALIDA_AUTO_MS, () => {
             const r = getRoom(code);
-            if (!r?.choosingSalida) return; // already resolved by game:choose-salida
+            if (!r?.match?.hand.result || r.choosingSalida) return;
+            enterChoosingState(code, winnerTeam as Team, teamSeats, defaultSalida);
             broadcastChoosingState(r, winnerTeam as Team, teamSeats);
             setTimer(code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(code));
           });
@@ -307,9 +308,39 @@ io.on('connection', (socket) => {
     const info = getSocketInfo(socket.id);
     if (!info) return;
     const room = getRoom(info.code);
-    // Reject if the winning team is still choosing who leads — don't let a
-    // player on the losing team (or a race) bypass the salida-picking flow.
-    if (room?.choosingSalida) return;
+    if (!room) return;
+    // Already in the choosing phase — picker is up, ignore stray clicks.
+    if (room.choosingSalida) return;
+
+    // If chooseSalida is on and the hand ended with a clear winner, clicking
+    // "Siguiente mano →" starts the 5-second countdown before the picker shows.
+    const result = room.match?.hand.result;
+    const winnerTeam = result?.winnerTeam;
+    if (room.config.chooseSalida && result !== undefined && winnerTeam !== undefined) {
+      const isTiedTranque = result.type === 'tranque' && result.tie;
+      if (!isTiedTranque) {
+        const teamSeats = ([0, 1, 2, 3] as Seat[]).filter(
+          (s) => (s % 2) === winnerTeam,
+        ) as [Seat, Seat];
+        const hasHuman = teamSeats.some((s) => {
+          const slot = room.slots[s];
+          return slot?.type === 'human' && slot.connected;
+        });
+        if (hasHuman) {
+          const defaultSalida = room.match!.nextSalida;
+          enterChoosingState(info.code, winnerTeam as Team, teamSeats, defaultSalida);
+          // setTimer replaces the 45-second auto-fallback with the 5-second window.
+          setTimer(info.code, SCORE_VIEW_MS, () => {
+            const r = getRoom(info.code);
+            if (!r?.choosingSalida) return;
+            broadcastChoosingState(r, winnerTeam as Team, teamSeats);
+            setTimer(info.code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(info.code));
+          });
+          return;
+        }
+      }
+    }
+
     doAdvanceHand(info.code);
   });
 
