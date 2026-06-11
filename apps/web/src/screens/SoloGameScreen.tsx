@@ -28,6 +28,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     botThinking,
     playableTiles,
     showPegao,
+    salidaPending,
     selectTile,
     playSide,
     cancelSelection,
@@ -135,6 +136,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           handNumber={handNumber}
           mySeat={HUMAN_SEAT}
           onNext={nextHand}
+          nextPending={salidaPending}
         />
       )}
       {phase === 'match-over' && match.winnerTeam !== undefined && (
