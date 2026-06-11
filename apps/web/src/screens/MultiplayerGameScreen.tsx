@@ -244,7 +244,7 @@ export function MultiplayerGameScreen({
 
       {/* ¿Quién sale? — salida picker after a hand is won */}
       {choosingSalida && (
-        <div className="absolute inset-0 z-25 flex items-end bg-black/50 backdrop-blur-sm">
+        <div className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm">
           <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-safe pb-6">
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">
               {choosingSalida.seats.includes(mySeat) ? '¡Tu equipo ganó!' : 'El equipo ganador elige...'}

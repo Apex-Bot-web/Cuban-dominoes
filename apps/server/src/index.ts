@@ -299,6 +299,10 @@ io.on('connection', (socket) => {
   socket.on('game:next-hand', () => {
     const info = getSocketInfo(socket.id);
     if (!info) return;
+    const room = getRoom(info.code);
+    // Reject if the winning team is still choosing who leads — don't let a
+    // player on the losing team (or a race) bypass the salida-picking flow.
+    if (room?.choosingSalida) return;
     doAdvanceHand(info.code);
   });
 
