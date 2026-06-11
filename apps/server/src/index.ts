@@ -104,6 +104,7 @@ function broadcastGameState(room: Room): void {
 const TURN_TIMEOUT_MS = 30_000;
 const BOT_THINK_MS = 750;
 const HAND_ADVANCE_MS = 8_000;
+const SCORE_VIEW_MS = 5_000;
 const CHOOSE_SALIDA_TIMEOUT_MS = 60_000;
 
 function handleActionResult(
@@ -142,10 +143,16 @@ function handleActionResult(
 
         if (hasHuman) {
           const defaultSalida = room.match!.nextSalida;
+          // Enter choosing state immediately so game:next-hand is blocked
+          // during the score-view window, but delay the picker broadcast so
+          // players have 5 seconds to review the ScoreScreen first.
           enterChoosingState(code, winnerTeam as Team, teamSeats, defaultSalida);
-          broadcastChoosingState(room, winnerTeam as Team, teamSeats);
-          // Auto-advance with default salida if nobody picks in time
-          setTimer(code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(code));
+          setTimer(code, SCORE_VIEW_MS, () => {
+            const r = getRoom(code);
+            if (!r?.choosingSalida) return; // already resolved by game:choose-salida
+            broadcastChoosingState(r, winnerTeam as Team, teamSeats);
+            setTimer(code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(code));
+          });
           return;
         }
       }
