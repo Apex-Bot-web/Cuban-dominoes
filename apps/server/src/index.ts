@@ -9,6 +9,7 @@ import {
   applyAutoAction,
   applyBotTurn,
   applyPlayerAction,
+  confirmSalidaInHand,
   createRoom,
   disconnectSocket,
   enterChoosingState,
@@ -145,14 +146,24 @@ function handleActionResult(
         if (hasHuman) {
           const defaultSalida = room.match!.nextSalida;
           // Park here — a player clicking "Siguiente mano →" (game:next-hand)
-          // starts the 5-second countdown before the picker appears. If nobody
-          // clicks within CHOOSE_SALIDA_AUTO_MS, show the picker automatically.
+          // deals tiles immediately, waits 5 s, then shows the picker. If nobody
+          // clicks within CHOOSE_SALIDA_AUTO_MS, do the same automatically.
           setTimer(code, CHOOSE_SALIDA_AUTO_MS, () => {
             const r = getRoom(code);
             if (!r?.match?.hand.result || r.choosingSalida) return;
+            // Deal tiles for the new hand
+            const autoAdvResult = advanceHand(code, defaultSalida);
+            if (!autoAdvResult.ok) return;
             enterChoosingState(code, winnerTeam as Team, teamSeats, defaultSalida);
-            broadcastChoosingState(r, winnerTeam as Team, teamSeats);
-            setTimer(code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(code));
+            broadcastGameState(autoAdvResult.room);
+            // Show picker immediately (no 5 s buffer for the auto-triggered path)
+            broadcastChoosingState(autoAdvResult.room, winnerTeam as Team, teamSeats, true);
+            setTimer(code, CHOOSE_SALIDA_TIMEOUT_MS, () => {
+              const autoResult = confirmSalidaInHand(code, defaultSalida);
+              if (!autoResult.ok) return;
+              broadcastGameState(autoResult.room);
+              scheduleNextTurn(code);
+            });
           });
           return;
         }
@@ -166,16 +177,17 @@ function handleActionResult(
   scheduleNextTurn(code);
 }
 
-function broadcastChoosingState(room: Room, winnerTeam: Team, seats: [Seat, Seat]): void {
+function broadcastChoosingState(room: Room, winnerTeam: Team, seats: [Seat, Seat], showPicker = true): void {
   for (const slot of room.slots) {
     if (!slot || slot.type !== 'human' || !slot.connected) continue;
-    io.to(slot.socketId).emit('game:choosing-salida', { winnerTeam, seats });
+    io.to(slot.socketId).emit('game:choosing-salida', { winnerTeam, seats, showPicker });
   }
 }
 
 function scheduleNextTurn(code: string): void {
   const room = getRoom(code);
   if (!room?.match || room.match.hand.result) return;
+  if (room.choosingSalida) return; // hand dealt but salida not chosen yet — don't schedule
 
   const turn = room.match.hand.turn;
   const slot = room.slots[turn];
@@ -281,6 +293,8 @@ io.on('connection', (socket) => {
   socket.on('game:action', (action: Action) => {
     const info = getSocketInfo(socket.id);
     if (!info) return;
+    const roomCheck = getRoom(info.code);
+    if (roomCheck?.choosingSalida) return; // salida picker is up — no play until chosen
     clearTimer(info.code);
 
     const result = applyPlayerAction(info.code, playerId, action);
@@ -295,12 +309,20 @@ io.on('connection', (socket) => {
   socket.on('game:choose-salida', ({ seat }: { seat: Seat }) => {
     const info = getSocketInfo(socket.id);
     if (!info) return;
-    const result = setChosenSalida(info.code, playerId, seat);
-    if (!result.ok) {
-      socket.emit('error', { message: result.error });
+    const validateResult = setChosenSalida(info.code, playerId, seat);
+    if (!validateResult.ok) {
+      socket.emit('error', { message: validateResult.error });
       return;
     }
-    doAdvanceHand(info.code, result.seat);
+    // Hand was already dealt in game:next-hand; just update who leads.
+    const applyResult = confirmSalidaInHand(info.code, validateResult.seat);
+    if (!applyResult.ok) {
+      socket.emit('error', { message: applyResult.error });
+      return;
+    }
+    clearTimer(info.code);
+    broadcastGameState(applyResult.room);
+    scheduleNextTurn(info.code);
   });
 
   // ── game:next-hand ───────────────────────────────────────────────────────────
@@ -328,13 +350,28 @@ io.on('connection', (socket) => {
         });
         if (hasHuman) {
           const defaultSalida = room.match!.nextSalida;
+          // Deal tiles immediately so all players can see their new fichas.
+          const dealResult = advanceHand(info.code, defaultSalida);
+          if (!dealResult.ok) {
+            doAdvanceHand(info.code); // fallback
+            return;
+          }
+          // advanceHand clears choosingSalida; re-enter choosing state.
           enterChoosingState(info.code, winnerTeam as Team, teamSeats, defaultSalida);
-          // setTimer replaces the 45-second auto-fallback with the 5-second window.
+          broadcastGameState(dealResult.room);
+          // Block play immediately but hide the picker for 5 s.
+          broadcastChoosingState(dealResult.room, winnerTeam as Team, teamSeats, false);
+          // After 5 s (SCORE_VIEW_MS), show the picker.
           setTimer(info.code, SCORE_VIEW_MS, () => {
             const r = getRoom(info.code);
             if (!r?.choosingSalida) return;
-            broadcastChoosingState(r, winnerTeam as Team, teamSeats);
-            setTimer(info.code, CHOOSE_SALIDA_TIMEOUT_MS, () => doAdvanceHand(info.code));
+            broadcastChoosingState(r, winnerTeam as Team, teamSeats, true);
+            setTimer(info.code, CHOOSE_SALIDA_TIMEOUT_MS, () => {
+              const autoResult = confirmSalidaInHand(info.code, defaultSalida);
+              if (!autoResult.ok) return;
+              broadcastGameState(autoResult.room);
+              scheduleNextTurn(info.code);
+            });
           });
           return;
         }

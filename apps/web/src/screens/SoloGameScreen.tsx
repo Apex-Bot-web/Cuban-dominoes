@@ -28,7 +28,6 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     botThinking,
     playableTiles,
     showPegao,
-    salidaPending,
     selectTile,
     playSide,
     cancelSelection,
@@ -136,7 +135,6 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           handNumber={handNumber}
           mySeat={HUMAN_SEAT}
           onNext={nextHand}
-          nextPending={salidaPending}
         />
       )}
       {phase === 'match-over' && match.winnerTeam !== undefined && (
@@ -154,7 +152,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
 
       {/* ¿Quién sale? — solo mode salida picker (human team won) */}
       {phase === 'choosing-salida' && (
-        <div className="absolute inset-0 z-25 flex items-end bg-black/50 backdrop-blur-sm">
+        <div className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm">
           <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-8">
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">
               ¡Ganaron la mano!

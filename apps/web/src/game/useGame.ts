@@ -29,7 +29,6 @@ export interface UseGameReturn {
   botThinking: boolean;
   playableTiles: Set<string>;
   showPegao: boolean;
-  salidaPending: boolean;
   selectTile: (tile: Tile) => void;
   playSide: (side: BoardSide) => void;
   cancelSelection: () => void;
@@ -48,10 +47,9 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [choosingSide, setChoosingSide] = useState(false);
   const [botThinking, setBotThinking] = useState(false);
-  const [salidaPending, setSalidaPending] = useState(false);
   const salidaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear the pending-salida timer on unmount
+  // Clear the salida timer on unmount
   useEffect(() => () => { if (salidaTimerRef.current) clearTimeout(salidaTimerRef.current); }, []);
 
   const view = useMemo(() => playerView(match, HUMAN), [match]);
@@ -154,33 +152,27 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
   }, []);
 
   const nextHand = useCallback(() => {
-    if (!match.hand.result || salidaPending) return;
+    if (!match.hand.result) return;
     const handResult = match.hand.result;
     const winnerTeam = handResult.winnerTeam;
     const isTiedTranque = handResult.type === 'tranque' && handResult.tie;
 
-    // Human team won — give them 5 s to look at the ScoreScreen before the picker appears
+    // Human team won — deal tiles now so the player can see their new fichas,
+    // then show the salida picker after 5 seconds.
     if (match.config.chooseSalida && winnerTeam === 0 && !isTiedTranque) {
-      setSalidaPending(true);
+      const result = startNextHand(match); // deal with provisional salida
+      if (!result.ok) return;
+      setMatch(result.match); // tiles visible; phase stays 'hand-over' (ScoreScreen hides when view.result is gone)
+      if (salidaTimerRef.current) clearTimeout(salidaTimerRef.current);
       salidaTimerRef.current = setTimeout(() => {
         salidaTimerRef.current = null;
-        setSalidaPending(false);
         setPhase('choosing-salida');
       }, 5_000);
       return;
     }
 
-    // Bot team won, or no choice needed — advance with default salida
+    // Bot team won, or no choice needed — advance immediately
     const result = startNextHand(match);
-    if (!result.ok) return;
-    setMatch(result.match);
-    setPhase('playing');
-    setSelectedTile(null);
-    setChoosingSide(false);
-  }, [match, salidaPending]);
-
-  const pickSalida = useCallback((seat: Seat) => {
-    const result = startNextHand(match, seat);
     if (!result.ok) return;
     setMatch(result.match);
     setPhase('playing');
@@ -188,9 +180,16 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     setChoosingSide(false);
   }, [match]);
 
+  const pickSalida = useCallback((seat: Seat) => {
+    // Tiles were already dealt in nextHand(); just set who leads.
+    setMatch(prev => ({ ...prev, hand: { ...prev.hand, turn: seat, salida: seat } }));
+    setPhase('playing');
+    setSelectedTile(null);
+    setChoosingSide(false);
+  }, []);
+
   const newMatch = useCallback(() => {
     if (salidaTimerRef.current) { clearTimeout(salidaTimerRef.current); salidaTimerRef.current = null; }
-    setSalidaPending(false);
     setMatch(createMatch({ chooseSalida: true }));
     setPhase('playing');
     setSelectedTile(null);
@@ -207,7 +206,6 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     botThinking,
     playableTiles,
     showPegao,
-    salidaPending,
     selectTile,
     playSide,
     cancelSelection,

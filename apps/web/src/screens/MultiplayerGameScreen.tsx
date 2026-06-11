@@ -57,7 +57,7 @@ export function MultiplayerGameScreen({
   const LEFT_SEAT = ((mySeat + 3) % 4) as Seat;
 
   const { tileCounts, turn, passHistory, teamScores, targetScore, handNumber, sleepingCount } = view;
-  const isMyTurn = turn === mySeat && phase === 'playing';
+  const isMyTurn = turn === mySeat && phase === 'playing' && choosingSalida === null;
 
   const [serverError, setServerError] = useState('');
   useEffect(() => {
@@ -242,8 +242,8 @@ export function MultiplayerGameScreen({
       <PegaoFlash show={showPegao} />
       <ChatBubbles messages={chatMessages} mySeat={mySeat} />
 
-      {/* ¿Quién sale? — salida picker after a hand is won */}
-      {choosingSalida && (
+      {/* ¿Quién sale? — salida picker (showPicker: false while players look at new tiles) */}
+      {choosingSalida && choosingSalida.showPicker !== false && (
         <div className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm">
           <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-safe pb-6">
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">

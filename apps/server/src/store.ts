@@ -326,6 +326,22 @@ export function setChosenSalida(
   return { ok: true, seat };
 }
 
+/** Update the leading seat on an already-dealt hand and clear choosing state. */
+export function confirmSalidaInHand(
+  code: string,
+  seat: Seat,
+): { ok: true; room: Room } | { ok: false; error: string } {
+  const room = rooms.get(code);
+  if (!room?.match) return { ok: false, error: 'No hay partida' };
+  if (room.match.hand.result) return { ok: false, error: 'La mano ya no está en curso' };
+  room.match = {
+    ...room.match,
+    hand: { ...room.match.hand, turn: seat, salida: seat },
+  };
+  delete room.choosingSalida;
+  return { ok: true, room };
+}
+
 // ── Connection events ─────────────────────────────────────────────────────────
 
 export function disconnectSocket(socketId: string): { code: string; seat: Seat } | null {

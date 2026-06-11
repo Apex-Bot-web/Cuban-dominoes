@@ -12,6 +12,8 @@ export interface ChatMessage {
 export interface ChoosingAboutSalida {
   winnerTeam: Team;
   seats: [Seat, Seat];
+  /** false = tiles dealt, block play but hide picker; true/undefined = show picker */
+  showPicker?: boolean;
 }
 
 export interface RoomSeatView {

@@ -90,14 +90,14 @@ export function useMultiplayerGame(
   const mySeat = view.seat;
 
   const playableTiles = useMemo<Set<string>>(() => {
-    if (phase !== 'playing' || view.turn !== mySeat) return new Set();
+    if (phase !== 'playing' || view.turn !== mySeat || choosingSalida !== null) return new Set();
     const moves = legalMoves(makeFakeHand(view), mySeat);
     return new Set(moves.map((m) => tileKey(m.tile)));
-  }, [view, phase, mySeat]);
+  }, [view, phase, mySeat, choosingSalida]);
 
   const selectTile = useCallback(
     (tile: Tile) => {
-      if (phase !== 'playing' || view.turn !== mySeat) return;
+      if (phase !== 'playing' || view.turn !== mySeat || choosingSalida !== null) return;
       const moves = legalMoves(makeFakeHand(view), mySeat).filter((m) =>
         sameTile(m.tile, tile),
       );
@@ -111,7 +111,7 @@ export function useMultiplayerGame(
         setChoosingSide(true);
       }
     },
-    [socket, view, phase, mySeat],
+    [socket, view, phase, mySeat, choosingSalida],
   );
 
   const playSide = useCallback(
@@ -130,9 +130,9 @@ export function useMultiplayerGame(
   }, []);
 
   const pass = useCallback(() => {
-    if (phase !== 'playing' || view.turn !== mySeat) return;
+    if (phase !== 'playing' || view.turn !== mySeat || choosingSalida !== null) return;
     socket.emit('game:action', { type: 'pass', seat: mySeat });
-  }, [socket, phase, view.turn, mySeat]);
+  }, [socket, phase, view.turn, mySeat, choosingSalida]);
 
   const pickSalida = useCallback(
     (seat: Seat) => {

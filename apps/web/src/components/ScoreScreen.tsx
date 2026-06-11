@@ -13,10 +13,9 @@ interface ScoreScreenProps {
   handNumber: number;
   mySeat: Seat;
   onNext: () => void;
-  nextPending?: boolean;
 }
 
-export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySeat, onNext, nextPending }: ScoreScreenProps) {
+export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySeat, onNext }: ScoreScreenProps) {
   const myTeam = teamOf(mySeat);
   const weWon = result.winnerTeam === myTeam;
   const isTie = result.type === 'tranque' && result.tie;
@@ -118,16 +117,10 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
         {/* CTA */}
         <div className="px-4 py-3">
           <button
-            disabled={nextPending}
             onClick={onNext}
-            className={clsx(
-              'w-full font-black text-base rounded-2xl py-3.5 transition-colors',
-              nextPending
-                ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                : 'bg-felt-light hover:bg-felt text-white active:scale-95',
-            )}
+            className="w-full font-black text-base rounded-2xl py-3.5 bg-felt-light hover:bg-felt text-white active:scale-95 transition-colors"
           >
-            {nextPending ? 'Eligiendo quién sale...' : 'Siguiente mano →'}
+            Siguiente mano →
           </button>
         </div>
       </div>
