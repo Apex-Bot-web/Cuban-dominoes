@@ -133,6 +133,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           teamScores={teamScores}
           targetScore={targetScore}
           handNumber={handNumber}
+          mySeat={HUMAN_SEAT}
           onNext={nextHand}
         />
       )}
@@ -141,6 +142,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           winnerTeam={match.winnerTeam}
           teamScores={teamScores}
           handNumber={handNumber}
+          mySeat={HUMAN_SEAT}
           onNewMatch={newMatch}
           onLeave={onLeave}
         />

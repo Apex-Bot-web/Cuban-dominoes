@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import type { Seat } from '@dominoes/engine';
+import { teamOf } from '@dominoes/engine';
 
 interface ScoreBarProps {
   teamScores: readonly [number, number];
@@ -6,6 +8,7 @@ interface ScoreBarProps {
   handNumber: number;
   sleepingCount: number;
   botThinking: boolean;
+  mySeat?: Seat;
   onLeave?: () => void;
   volume?: number;
   onVolumeChange?: (v: number) => void;
@@ -13,11 +16,13 @@ interface ScoreBarProps {
 
 export function ScoreBar({
   teamScores, targetScore, handNumber, sleepingCount, botThinking,
-  onLeave, volume, onVolumeChange,
+  mySeat = 0, onLeave, volume, onVolumeChange,
 }: ScoreBarProps) {
-  const [t0, t1] = teamScores;
-  const pct0 = Math.min(100, (t0 / targetScore) * 100);
-  const pct1 = Math.min(100, (t1 / targetScore) * 100);
+  const myTeam = teamOf(mySeat);
+  const myScore = teamScores[myTeam];
+  const theirScore = teamScores[1 - myTeam as 0 | 1];
+  const pct0 = Math.min(100, (myScore / targetScore) * 100);
+  const pct1 = Math.min(100, (theirScore / targetScore) * 100);
   const [showSlider, setShowSlider] = useState(false);
 
   const speakerIcon = volume === undefined ? null
@@ -33,10 +38,10 @@ export function ScoreBar({
         </button>
       )}
 
-      {/* Team 0 — us */}
+      {/* My team */}
       <div className="flex flex-col items-center min-w-[52px]">
         <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/80">Nosotros</span>
-        <span className="text-2xl font-black text-white tabular-nums leading-none">{t0}</span>
+        <span className="text-2xl font-black text-white tabular-nums leading-none">{myScore}</span>
       </div>
 
       {/* Progress bars */}
@@ -59,10 +64,10 @@ export function ScoreBar({
         </div>
       </div>
 
-      {/* Team 1 — them */}
+      {/* Opponent team */}
       <div className="flex flex-col items-center min-w-[52px]">
         <span className="text-[10px] font-bold uppercase tracking-widest text-red-400/80">Ellos</span>
-        <span className="text-2xl font-black text-white tabular-nums leading-none">{t1}</span>
+        <span className="text-2xl font-black text-white tabular-nums leading-none">{theirScore}</span>
       </div>
 
       {/* Meta */}

@@ -88,6 +88,7 @@ export function MultiplayerGameScreen({
         handNumber={handNumber}
         sleepingCount={sleepingCount}
         botThinking={false}
+        mySeat={mySeat}
         onLeave={onLeave}
         volume={volume}
         onVolumeChange={setVolume}
@@ -223,6 +224,7 @@ export function MultiplayerGameScreen({
           teamScores={teamScores}
           targetScore={targetScore}
           handNumber={handNumber}
+          mySeat={mySeat}
           onNext={nextHand}
         />
       )}
@@ -231,6 +233,7 @@ export function MultiplayerGameScreen({
           winnerTeam={view.matchWinnerTeam}
           teamScores={teamScores}
           handNumber={handNumber}
+          mySeat={mySeat}
           onNewMatch={handlePlayAgain}
           onLeave={onLeave}
         />
