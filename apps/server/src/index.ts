@@ -1,7 +1,9 @@
 import cors from 'cors';
 import express from 'express';
 import { createServer } from 'http';
+import path from 'path';
 import { Server } from 'socket.io';
+import { fileURLToPath } from 'url';
 import {
   advanceHand,
   applyAutoAction,
@@ -21,17 +23,37 @@ import type { Action, BotLevel, GameConfig, Room, Seat } from './types.js';
 
 // ── Express + Socket.IO setup ─────────────────────────────────────────────────
 
+const IS_PROD = process.env['NODE_ENV'] === 'production';
 const PORT = Number(process.env['PORT'] ?? 3001);
-const ALLOWED_ORIGINS = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  ...(process.env['CLIENT_ORIGIN'] ? [process.env['CLIENT_ORIGIN']] : []),
-];
+
+// In production the web app is served from the same origin — no CORS needed.
+// In dev allow the Vite dev server and any explicit CLIENT_ORIGIN.
+const ALLOWED_ORIGINS = IS_PROD
+  ? true // same-origin, allow all (socket.io path is /socket.io/)
+  : [
+      'http://localhost:5173',
+      'http://localhost:4173',
+      ...(process.env['CLIENT_ORIGIN'] ? [process.env['CLIENT_ORIGIN']] : []),
+    ];
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-app.use(cors({ origin: ALLOWED_ORIGINS }));
+if (!IS_PROD) app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
+
+// Health — before static middleware so it always responds
 app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+
+// Serve built web app in production
+if (IS_PROD) {
+  const webDist = path.join(__dirname, '../../web/dist');
+  app.use(express.static(webDist));
+  // SPA fallback — any unmatched GET returns index.html
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(webDist, 'index.html'));
+  });
+}
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

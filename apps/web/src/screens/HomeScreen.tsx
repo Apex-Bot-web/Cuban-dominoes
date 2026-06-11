@@ -4,7 +4,8 @@ import { io } from 'socket.io-client';
 import type { RoomView } from '../types/socket';
 import type { Socket } from 'socket.io-client';
 
-const SERVER_URL = import.meta.env['VITE_SERVER_URL'] ?? 'http://localhost:3001';
+// Dev: connect to the server dev port. Prod: same origin (server also serves the web build).
+const SERVER_URL = import.meta.env['VITE_SERVER_URL'] ?? (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin);
 
 function getOrCreatePlayerId(): string {
   let id = localStorage.getItem('dominoes-player-id');
