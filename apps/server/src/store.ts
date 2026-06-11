@@ -188,7 +188,9 @@ export function startGame(
   }
   if (room.slots.some((s) => s === null)) return { ok: false, error: 'Faltan jugadores (necesita 4)' };
 
-  room.match = createMatch(room.config);
+  // If this is a rematch, the winning team leads the new match.
+  const rematchSalida = room.match?.winnerTeam !== undefined ? room.match.nextSalida : undefined;
+  room.match = createMatch(room.config, undefined, rematchSalida);
   room.status = 'playing';
   return { ok: true, room };
 }

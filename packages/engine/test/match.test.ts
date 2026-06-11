@@ -33,6 +33,14 @@ describe('match creation', () => {
     const r = startNextHand(m);
     expect(r.ok).toBe(false);
   });
+
+  it('forceSalida overrides firstLead so the specified seat always leads', () => {
+    for (const seat of [0, 1, 2, 3] as Seat[]) {
+      const m = createMatch({}, 42, seat);
+      expect(m.hand.salida).toBe(seat);
+      expect(m.hand.turn).toBe(seat);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import { sameTile } from './tiles.js';
 export function createMatch(
   config: Partial<GameConfig> = {},
   seed: number = (Date.now() ^ (Math.random() * 0xffffffff)) >>> 0,
+  forceSalida?: Seat,
 ): MatchState {
   const cfg: GameConfig = { ...DEFAULT_CONFIG, ...config };
   let rngState = seed >>> 0;
@@ -20,8 +21,11 @@ export function createMatch(
   const { hand, rngState: afterDeal } = createHand(cfg, 0, rngState);
   rngState = afterDeal;
 
-  let salida: Seat = 0;
-  if (cfg.firstLead === 'double-max') {
+  let salida: Seat;
+  if (forceSalida !== undefined) {
+    // Rematch: the winning team's seat leads, overriding firstLead config.
+    salida = forceSalida;
+  } else if (cfg.firstLead === 'double-max') {
     const doubleMax: Tile = [cfg.maxPip, cfg.maxPip];
     const holder = SEATS.find((s) => hand.hands[s]!.some((t) => sameTile(t, doubleMax)));
     // With 40 of 55 tiles dealt, the double-9 sleeps ~27% of the time.
