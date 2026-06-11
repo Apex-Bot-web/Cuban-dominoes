@@ -106,8 +106,8 @@ export function createRoom(
     code,
     hostPlayerId: playerId,
     slots: [slot, null, null, null],
-    // chooseSalida defaults true on this server — winning team picks who leads
-    config: { ...DEFAULT_CONFIG, chooseSalida: true, ...config },
+    // chooseSalida + tieTranque pinned — callers cannot override these house rules
+    config: { ...DEFAULT_CONFIG, ...config, chooseSalida: true, tieTranque: 'no-score' },
     status: 'waiting',
   };
   rooms.set(code, room);
