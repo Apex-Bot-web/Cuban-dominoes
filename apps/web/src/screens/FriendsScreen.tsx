@@ -100,6 +100,16 @@ export function FriendsScreen({ onBack }: FriendsScreenProps) {
       .catch(() => {});
   }
 
+  function handleInvite(name: string) {
+    const url = window.location.origin;
+    const text = `Play Cuban Domino with me! 🎲 Create a private room and share the code, or I'll create one for us. Add me with friend code: ${myCode ?? ''}`;
+    if (navigator.share) {
+      void navigator.share({ title: `Play Cuban Domino with ${name}`, text, url }).catch(() => {});
+    } else {
+      void navigator.clipboard.writeText(`${text}\n${url}`);
+    }
+  }
+
   const onlineFriends = friends.filter((f) => f.online);
   const offlineFriends = friends.filter((f) => !f.online);
 
@@ -204,7 +214,7 @@ export function FriendsScreen({ onBack }: FriendsScreenProps) {
             <div className="flex flex-col gap-2 mb-3">
               <p className="text-green-400/60 text-[9px] font-bold uppercase tracking-widest px-1">Online now</p>
               {onlineFriends.map((f) => (
-                <FriendRow key={f.playerId} friend={f} onRemove={handleRemove} />
+                <FriendRow key={f.playerId} friend={f} onRemove={handleRemove} onInvite={handleInvite} />
               ))}
             </div>
           )}
@@ -215,7 +225,7 @@ export function FriendsScreen({ onBack }: FriendsScreenProps) {
                 <p className="text-white/25 text-[9px] font-bold uppercase tracking-widest px-1 mt-1">Offline</p>
               )}
               {offlineFriends.map((f) => (
-                <FriendRow key={f.playerId} friend={f} onRemove={handleRemove} />
+                <FriendRow key={f.playerId} friend={f} onRemove={handleRemove} onInvite={handleInvite} />
               ))}
             </div>
           )}
@@ -228,9 +238,11 @@ export function FriendsScreen({ onBack }: FriendsScreenProps) {
 function FriendRow({
   friend,
   onRemove,
+  onInvite,
 }: {
   friend: FriendView;
   onRemove: (id: string, name: string) => void;
+  onInvite: (name: string) => void;
 }) {
   return (
     <div className="flex items-center gap-3 bg-white/5 border border-white/8 rounded-2xl px-4 py-3">
@@ -254,6 +266,14 @@ function FriendRow({
         </div>
         <span className="text-white/30 text-[10px] font-mono tracking-widest">{friend.friendCode}</span>
       </div>
+
+      {/* Invite */}
+      <button
+        onClick={() => onInvite(friend.displayName)}
+        className="shrink-0 bg-green-600/20 active:bg-green-600/40 text-green-300 border border-green-600/30 font-black text-xs rounded-xl px-3 py-1.5 transition-colors"
+      >
+        Invite
+      </button>
 
       {/* Remove */}
       <button

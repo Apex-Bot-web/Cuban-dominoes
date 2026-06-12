@@ -97,7 +97,7 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
     return (
       <div ref={containerRef} className="flex-1 flex items-center justify-center">
         <p className="text-white/20 text-sm font-semibold tracking-widest uppercase select-none">
-          Esperando la salida…
+          Waiting for the first play…
         </p>
       </div>
     );

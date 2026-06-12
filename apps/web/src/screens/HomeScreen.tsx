@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import { io } from 'socket.io-client';
 import type { BotLevel, RoomView } from '../types/socket';
 import type { Socket } from 'socket.io-client';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { useLoginStreak } from '../hooks/useLoginStreak';
 
 // Dev: connect to the server dev port. Prod: same origin (server also serves the web build).
@@ -45,6 +46,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLe
   const [botLevel, setBotLevel] = useState<BotLevel>('medio');
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
   const streak = useLoginStreak();
+  const { showBanner, install, dismiss } = useInstallPrompt();
 
   // Presence heartbeat while on home screen
   useEffect(() => {
@@ -191,6 +193,29 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLe
       {/* Error */}
       {error && (
         <p className="text-red-400 text-sm font-semibold text-center -mt-1 max-w-xs">{error}</p>
+      )}
+
+      {/* PWA install banner */}
+      {showBanner && (
+        <div className="w-full max-w-xs flex items-center gap-3 bg-indigo-600/30 border border-indigo-500/40 rounded-2xl px-4 py-3">
+          <span className="text-2xl shrink-0">📲</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-black text-sm leading-tight">Add to Home Screen</p>
+            <p className="text-white/50 text-xs">Play without the browser bar</p>
+          </div>
+          <button
+            onClick={install}
+            className="shrink-0 bg-indigo-500 active:bg-indigo-400 text-white font-black text-xs rounded-xl px-3 py-2 transition-colors"
+          >
+            Install
+          </button>
+          <button
+            onClick={dismiss}
+            className="shrink-0 text-white/30 active:text-white/60 text-lg leading-none w-6 h-6 flex items-center justify-center"
+          >
+            ×
+          </button>
+        </div>
       )}
 
       {/* Buttons */}

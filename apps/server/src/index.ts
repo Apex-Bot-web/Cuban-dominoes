@@ -443,6 +443,17 @@ io.on('connection', (socket) => {
     if (!info) return;
     const result = startGame(info.code, playerId);
     if (!result.ok) {
+      // Another player already triggered the rematch — just sync this socket
+      const room = getRoom(info.code);
+      if (room?.status === 'playing') {
+        const views = getGameViews(room);
+        const seatIdx = room.slots.findIndex(
+          (s) => s?.type === 'human' && s.playerId === playerId,
+        );
+        const view = seatIdx >= 0 ? views[seatIdx] : undefined;
+        if (view) socket.emit('game:state', view);
+        return;
+      }
       socket.emit('error', { message: result.error });
       return;
     }
