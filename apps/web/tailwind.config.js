@@ -43,11 +43,16 @@ export default {
           '78%':  { opacity: '1', transform: 'scale(1) translateY(0)' },
           '100%': { opacity: '0', transform: 'scale(0.9) translateY(-6px)' },
         },
+        'slide-up': {
+          '0%':   { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
       },
       animation: {
         'pulse-ring':  'pulse-ring 1.2s ease-in-out infinite',
         'pegao':       'pegao 1.6s cubic-bezier(0.22,1,0.36,1) forwards',
         'chat-bubble': 'chat-bubble 3.5s ease-out forwards',
+        'slide-up':    'slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
       },
     },
   },

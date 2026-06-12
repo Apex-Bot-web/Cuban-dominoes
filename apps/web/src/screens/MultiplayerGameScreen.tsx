@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import type { Seat } from '@dominoes/engine';
 import type { Socket } from 'socket.io-client';
@@ -48,8 +48,24 @@ export function MultiplayerGameScreen({
   } = useMultiplayerGame(socket, initialView);
 
   const { volume, setVolume } = useBackgroundMusic();
-  const { messages: chatMessages, sendEmoji } = useChatMessages(socket);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const { floatingMessages, chatHistory, sendEmoji, sendText } = useChatMessages(socket);
+
+  const [showChat, setShowChat] = useState(false);
+  const [textInput, setTextInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to latest message when chat is open
+  useEffect(() => {
+    if (showChat) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory, showChat]);
+
+  function handleSendText(e: React.FormEvent) {
+    e.preventDefault();
+    const t = textInput.trim();
+    if (!t) return;
+    sendText(t);
+    setTextInput('');
+  }
 
   // Track live room state for reconnect indicators
   const [currentRoom, setCurrentRoom] = useState(room);
@@ -92,11 +108,10 @@ export function MultiplayerGameScreen({
     socket.emit('room:start', {});
   }
 
-  // Display name for the current seat from room data
   function seatName(seat: Seat): string {
     const slot = room.seats[seat];
     if (!slot) return `Asiento ${seat}`;
-    return slot.type === 'bot' ? slot.displayName : slot.displayName;
+    return slot.displayName;
   }
 
   return (
@@ -190,7 +205,7 @@ export function MultiplayerGameScreen({
             isMyTurn && 'bg-white/5',
           )}
         >
-          {/* Left: turn indicator + name + count */}
+          {/* Left: turn indicator + name + tile count */}
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             {isMyTurn && (
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)] shrink-0" />
@@ -208,7 +223,7 @@ export function MultiplayerGameScreen({
             </span>
           </div>
 
-          {/* Right: Pasar + emoji chat button */}
+          {/* Right: Pasar + chat button */}
           <div className="flex items-center gap-2 shrink-0">
             {isMyTurn && playableTiles.size === 0 && (
               <button
@@ -219,34 +234,16 @@ export function MultiplayerGameScreen({
               </button>
             )}
 
-            {/* Emoji picker */}
-            <div className="relative">
-              <button
-                onClick={() => setShowEmojiPicker((s) => !s)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-base transition-colors active:scale-90"
-                title="Enviar emoji"
-              >
-                💬
-              </button>
-              {showEmojiPicker && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowEmojiPicker(false)} />
-                  <div className="absolute bottom-full right-0 mb-2 z-50 bg-felt-dark border border-white/15 rounded-2xl p-3 shadow-2xl">
-                    <div className="grid grid-cols-4 gap-2">
-                      {EMOJIS.map((emoji) => (
-                        <button
-                          key={emoji}
-                          onClick={() => { sendEmoji(emoji); setShowEmojiPicker(false); }}
-                          className="w-10 h-10 flex items-center justify-center text-2xl rounded-xl hover:bg-white/10 active:scale-90 transition-all"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+            <button
+              onClick={() => setShowChat((s) => !s)}
+              className={clsx(
+                'w-8 h-8 flex items-center justify-center rounded-full text-base transition-colors active:scale-90',
+                showChat ? 'bg-felt-light text-white' : 'bg-white/5 hover:bg-white/10',
               )}
-            </div>
+              title="Chat"
+            >
+              💬
+            </button>
           </div>
         </div>
 
@@ -284,9 +281,9 @@ export function MultiplayerGameScreen({
       )}
 
       <PegaoFlash show={showPegao} />
-      <ChatBubbles messages={chatMessages} mySeat={mySeat} />
+      <ChatBubbles messages={floatingMessages} mySeat={mySeat} />
 
-      {/* ¿Quién sale? — salida picker (showPicker: false while players look at new tiles) */}
+      {/* ¿Quién sale? — salida picker */}
       {choosingSalida && choosingSalida.showPicker !== false && (
         <div className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm">
           <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-safe pb-6">
@@ -308,9 +305,7 @@ export function MultiplayerGameScreen({
                     </span>
                     <div>
                       <p className="text-white font-black">{seatName(seat)}</p>
-                      {seat === mySeat && (
-                        <p className="text-green-400/70 text-xs">Tú</p>
-                      )}
+                      {seat === mySeat && <p className="text-green-400/70 text-xs">Tú</p>}
                     </div>
                     <span className="ml-auto text-white/30 text-lg">→</span>
                   </button>
@@ -326,6 +321,102 @@ export function MultiplayerGameScreen({
             )}
           </div>
         </div>
+      )}
+
+      {/* Chat tray — slides up from bottom, z-10 keeps it below ScoreScreen */}
+      {showChat && (
+        <>
+          {/* Backdrop — tap outside tray to close */}
+          <div
+            className="absolute inset-0 z-10 bg-black/30"
+            onClick={() => setShowChat(false)}
+          />
+          {/* Tray */}
+          <div
+            className="absolute inset-x-0 bottom-0 z-10 flex flex-col bg-felt-dark border-t border-white/15 rounded-t-3xl animate-slide-up"
+            style={{ maxHeight: '58vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-white/10 shrink-0">
+              <span className="text-white font-black text-base">Chat</span>
+              <button
+                onClick={() => setShowChat(false)}
+                className="text-white/40 hover:text-white text-sm transition-colors w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Message history */}
+            <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-3 flex flex-col gap-2.5 min-h-0">
+              {chatHistory.length === 0 ? (
+                <p className="text-white/25 text-sm text-center py-6">Nadie ha dicho nada todavía 👀</p>
+              ) : (
+                chatHistory.map((msg) => {
+                  const isMe = msg.seat === mySeat;
+                  return (
+                    <div key={msg.id} className={clsx('flex flex-col gap-0.5', isMe ? 'items-end' : 'items-start')}>
+                      {!isMe && (
+                        <span className="text-white/40 text-[10px] font-bold px-1">{msg.displayName}</span>
+                      )}
+                      <div
+                        className={clsx(
+                          'px-3 py-2 max-w-[78%] break-words',
+                          isMe
+                            ? 'bg-felt-light text-white rounded-2xl rounded-br-sm'
+                            : 'bg-white/15 text-white rounded-2xl rounded-bl-sm',
+                        )}
+                      >
+                        {msg.emoji ? (
+                          <span className="text-2xl leading-none">{msg.emoji}</span>
+                        ) : (
+                          <span className="text-sm leading-snug">{msg.text}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Quick emojis */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-2.5 border-t border-white/10 shrink-0">
+              {EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendEmoji(emoji)}
+                  className="text-2xl w-9 h-9 shrink-0 flex items-center justify-center rounded-xl hover:bg-white/10 active:scale-90 transition-all"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Text input */}
+            <form
+              onSubmit={handleSendText}
+              className="flex gap-2 px-4 py-3 border-t border-white/10 pb-safe shrink-0"
+            >
+              <input
+                type="text"
+                maxLength={120}
+                placeholder="Escribe un mensaje…"
+                value={textInput}
+                onChange={(e) => setTextInput(e.target.value)}
+                className="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/30 rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-white/40 transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!textInput.trim()}
+                className="bg-felt-light hover:bg-felt text-white font-black rounded-2xl px-4 py-2.5 transition-colors disabled:opacity-30 active:scale-95 shrink-0"
+              >
+                →
+              </button>
+            </form>
+          </div>
+        </>
       )}
     </div>
   );

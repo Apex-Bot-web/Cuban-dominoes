@@ -6,7 +6,8 @@ export interface ChatMessage {
   id: string;
   seat: Seat;
   displayName: string;
-  emoji: string;
+  emoji?: string;
+  text?: string;
 }
 
 export interface ChoosingAboutSalida {

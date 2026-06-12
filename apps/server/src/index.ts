@@ -382,19 +382,23 @@ io.on('connection', (socket) => {
   });
 
   // ── chat:send ────────────────────────────────────────────────────────────────
-  socket.on('chat:send', ({ emoji }: { emoji: string }) => {
+  socket.on('chat:send', ({ emoji, text }: { emoji?: string; text?: string }) => {
     const info = getSocketInfo(socket.id);
     if (!info) return;
     const room = getRoom(info.code);
     if (!room) return;
     const slot = room.slots[info.seat];
     if (!slot) return;
-    // Validate: must be a single emoji (simple length guard)
-    if (typeof emoji !== 'string' || emoji.length > 8) return;
+
+    const validEmoji = typeof emoji === 'string' && emoji.length <= 8 ? emoji : undefined;
+    const validText = typeof text === 'string' ? text.trim().slice(0, 120) : undefined;
+    if (!validEmoji && !validText) return;
+
     io.to(info.code).emit('chat:message', {
       seat: info.seat,
       displayName: slot.displayName,
-      emoji,
+      ...(validEmoji ? { emoji: validEmoji } : {}),
+      ...(validText  ? { text: validText }  : {}),
     });
   });
 

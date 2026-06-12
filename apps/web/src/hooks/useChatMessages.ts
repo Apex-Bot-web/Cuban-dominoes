@@ -5,14 +5,18 @@ import type { ChatMessage, Seat } from '../types/socket';
 let counter = 0;
 
 export function useChatMessages(socket: Socket) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Floating bubbles shown on the board — max 1 per seat to prevent clustering
+  const [floatingMessages, setFloatingMessages] = useState<ChatMessage[]>([]);
+  // Full scrollable history in the chat panel
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
-    function onChatMessage(payload: { seat: Seat; displayName: string; emoji: string }) {
+    function onChatMessage(payload: { seat: Seat; displayName: string; emoji?: string; text?: string }) {
       const msg: ChatMessage = { ...payload, id: String(++counter) };
-      setMessages((prev) => [...prev, msg]);
+      setFloatingMessages((prev) => [...prev.filter((m) => m.seat !== msg.seat), msg]);
+      setChatHistory((prev) => [...prev.slice(-49), msg]);
       setTimeout(() => {
-        setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+        setFloatingMessages((prev) => prev.filter((m) => m.id !== msg.id));
       }, 3500);
     }
     socket.on('chat:message', onChatMessage);
@@ -24,5 +28,13 @@ export function useChatMessages(socket: Socket) {
     [socket],
   );
 
-  return { messages, sendEmoji };
+  const sendText = useCallback(
+    (text: string) => {
+      const t = text.trim().slice(0, 120);
+      if (t) socket.emit('chat:send', { text: t });
+    },
+    [socket],
+  );
+
+  return { floatingMessages, chatHistory, sendEmoji, sendText };
 }
