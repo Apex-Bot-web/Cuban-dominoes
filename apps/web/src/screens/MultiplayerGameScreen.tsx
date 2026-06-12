@@ -13,6 +13,7 @@ import { ScoreScreen } from '../components/ScoreScreen';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMultiplayerGame } from '../hooks/useMultiplayerGame';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 import type { PlayerView, RoomView } from '../types/socket';
 
 const EMOJIS = ['😂', '🔥', '👏', '🙌', '😤', '🎉', '💪', '😎', '🫡', '😢', '😮', '🤣', '🤌', '👀', '🤦', '🎊'];
@@ -49,6 +50,29 @@ export function MultiplayerGameScreen({
 
   const { volume, setVolume } = useBackgroundMusic();
   const { floatingMessages, chatHistory, sendEmoji, sendText } = useChatMessages(socket);
+  const { play } = useSoundEffects();
+
+  // Sound effects: tile place, pass, deal, win/lose
+  const prevBoardLenRef = useRef(0);
+  const prevPassLenRef  = useRef(0);
+  const prevHandNumRef  = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    const bl = view.board.length;
+    const pl = view.passHistory.length;
+    const hn = view.handNumber;
+    if (bl > prevBoardLenRef.current) play('tilePlace');
+    if (pl > prevPassLenRef.current)  play('pass');
+    if (prevHandNumRef.current !== undefined && hn !== prevHandNumRef.current) play('deal');
+    prevBoardLenRef.current = bl;
+    prevPassLenRef.current  = pl;
+    prevHandNumRef.current  = hn;
+  }, [view.board.length, view.passHistory.length, view.handNumber, play]);
+
+  useEffect(() => {
+    if (phase === 'match-over' && view.matchWinnerTeam !== undefined) {
+      play(view.matchWinnerTeam === (view.seat % 2) ? 'win' : 'lose');
+    }
+  }, [phase, view.matchWinnerTeam, view.seat, play]);
 
   const [showChat, setShowChat] = useState(false);
   const [textInput, setTextInput] = useState('');

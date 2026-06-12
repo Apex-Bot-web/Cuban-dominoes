@@ -11,6 +11,20 @@ interface MatchOverScreenProps {
   onLeave?: () => void;
 }
 
+function shareResult(weWon: boolean, myScore: number, theirScore: number, handNumber: number) {
+  const text = weWon
+    ? `🏆 Won at Cuban Domino! ${myScore}–${theirScore} in ${handNumber} hand${handNumber !== 1 ? 's' : ''}. Think you can beat me? 🎲`
+    : `Tough loss at Cuban Domino — ${myScore}–${theirScore}. Rematch? 🎲`;
+
+  if (navigator.share) {
+    navigator
+      .share({ title: 'Cuban Domino', text })
+      .catch(() => {});
+  } else {
+    void navigator.clipboard.writeText(text);
+  }
+}
+
 export function MatchOverScreen({ winnerTeam, teamScores, handNumber, mySeat, onNewMatch, onLeave }: MatchOverScreenProps) {
   const myTeam = teamOf(mySeat);
   const weWon = winnerTeam === myTeam;
@@ -37,7 +51,7 @@ export function MatchOverScreen({ winnerTeam, teamScores, handNumber, mySeat, on
           </div>
         </div>
 
-        {/* Scores — Nosotros = my team */}
+        {/* Scores */}
         <div className="flex items-stretch divide-x divide-white/10 border-y border-white/10">
           <div className={clsx('flex-1 py-5 flex flex-col items-center gap-0.5', !weWon && 'opacity-40')}>
             <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/70">Us</span>
@@ -56,14 +70,20 @@ export function MatchOverScreen({ winnerTeam, teamScores, handNumber, mySeat, on
         {/* CTA */}
         <div className="px-4 py-4 flex flex-col gap-2">
           <button
-            className="w-full bg-felt-light hover:bg-felt text-white font-black text-lg rounded-2xl py-4 transition-colors active:scale-95"
+            className="w-full bg-felt-light active:bg-felt text-white font-black text-lg rounded-2xl py-4 transition-colors active:scale-95"
             onClick={onNewMatch}
           >
             Play Again
           </button>
+          <button
+            className="w-full bg-white/10 active:bg-white/20 text-white/70 font-bold text-base rounded-2xl py-3 transition-colors active:scale-95"
+            onClick={() => shareResult(weWon, myScore, theirScore, handNumber)}
+          >
+            {weWon ? '📣 Share Win' : '📣 Share Result'}
+          </button>
           {onLeave && (
             <button
-              className="w-full text-white/40 hover:text-white/70 text-sm font-bold py-2 transition-colors"
+              className="w-full text-white/30 active:text-white/60 text-sm font-bold py-2 transition-colors"
               onClick={onLeave}
             >
               Leave

@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import { io } from 'socket.io-client';
 import type { BotLevel, RoomView } from '../types/socket';
 import type { Socket } from 'socket.io-client';
+import { useLoginStreak } from '../hooks/useLoginStreak';
 
 // Dev: connect to the server dev port. Prod: same origin (server also serves the web build).
 const SERVER_URL = import.meta.env['VITE_SERVER_URL'] ?? (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin);
@@ -25,6 +26,7 @@ interface HomeScreenProps {
   onMultiplayer: (socket: Socket, room: RoomView) => void;
   onMatchmaking: (socket: Socket, displayName: string) => void;
   onStats: () => void;
+  onLeaderboard: () => void;
   onEditAccount: () => void;
 }
 
@@ -34,12 +36,28 @@ const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
   { level: 'duro',  emoji: '🧠', label: 'Hard'  },
 ];
 
-export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onEditAccount }: HomeScreenProps) {
+export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLeaderboard, onEditAccount }: HomeScreenProps) {
   const [displayName] = useState(getSavedName);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<'create' | 'join' | 'queue' | null>(null);
   const [botLevel, setBotLevel] = useState<BotLevel>('medio');
+  const [onlineCount, setOnlineCount] = useState<number | null>(null);
+  const streak = useLoginStreak();
+
+  useEffect(() => {
+    fetch(`${SERVER_URL}/api/online`)
+      .then((r) => r.json() as Promise<{ count: number }>)
+      .then((d) => setOnlineCount(d.count))
+      .catch(() => {});
+    const iv = setInterval(() => {
+      fetch(`${SERVER_URL}/api/online`)
+        .then((r) => r.json() as Promise<{ count: number }>)
+        .then((d) => setOnlineCount(d.count))
+        .catch(() => {});
+    }, 30_000);
+    return () => clearInterval(iv);
+  }, []);
 
   function connect(onConnected: (socket: Socket) => void) {
     const playerId = getOrCreatePlayerId();
@@ -111,27 +129,48 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onEd
   }
 
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-6 px-6 felt-texture">
+    <div className="h-full flex flex-col items-center justify-center gap-5 px-6 felt-texture">
       {/* Title */}
       <div className="text-center">
-        <div className="text-6xl mb-3 leading-none select-none">🁣</div>
-        <h1 className="text-4xl font-black text-white tracking-tight">Cuban Domino</h1>
-        <p className="text-white/40 text-sm mt-1">Double-9 · 4 players · up to 100 points</p>
+        <div className="text-5xl mb-2 leading-none select-none">🁣</div>
+        <h1 className="text-3xl font-black text-white tracking-tight">Cuban Domino</h1>
+        {onlineCount !== null && onlineCount > 0 && (
+          <p className="text-green-400/80 text-xs font-bold mt-1 flex items-center justify-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+            {onlineCount.toLocaleString()} online now
+          </p>
+        )}
       </div>
 
-      {/* Account pill */}
-      <button
-        onClick={onEditAccount}
-        className="flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-4 py-2.5 transition-colors"
-      >
-        <span className="text-lg">👤</span>
-        <span className="text-white font-bold text-sm">{displayName || 'Set your name'}</span>
-        <span className="text-white/30 text-xs">✎</span>
-      </button>
+      {/* Account row + streak + leaderboard */}
+      <div className="flex items-center gap-2 w-full max-w-xs">
+        <button
+          onClick={onEditAccount}
+          className="flex items-center gap-2 bg-white/10 active:bg-white/20 border border-white/15 rounded-2xl px-3 py-2.5 transition-colors flex-1 min-w-0"
+        >
+          <span className="text-base">👤</span>
+          <span className="text-white font-bold text-sm truncate">{displayName || 'Set your name'}</span>
+          <span className="text-white/30 text-xs ml-auto shrink-0">✎</span>
+        </button>
+
+        {streak > 1 && (
+          <div className="flex flex-col items-center bg-orange-500/20 border border-orange-500/30 rounded-2xl px-3 py-2 shrink-0">
+            <span className="text-lg leading-none">🔥</span>
+            <span className="text-orange-300 font-black text-xs tabular-nums">{streak}</span>
+          </div>
+        )}
+
+        <button
+          onClick={onLeaderboard}
+          className="w-12 h-12 flex items-center justify-center bg-white/10 active:bg-white/20 border border-white/15 rounded-2xl transition-colors shrink-0 text-xl"
+        >
+          🏆
+        </button>
+      </div>
 
       {/* Error */}
       {error && (
-        <p className="text-red-400 text-sm font-semibold text-center -mt-2 max-w-xs">{error}</p>
+        <p className="text-red-400 text-sm font-semibold text-center -mt-1 max-w-xs">{error}</p>
       )}
 
       {/* Buttons */}

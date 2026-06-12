@@ -25,7 +25,7 @@ import {
   startGame,
 } from './store.js';
 import type { Action, BotLevel, GameConfig, Room, Seat, Team } from './types.js';
-import { getPlayerStats, recordMatchResult, upsertPlayer } from './db.js';
+import { getLeaderboard, getPlayerStats, recordMatchResult, upsertPlayer } from './db.js';
 import {
   clearBackfillTimer,
   drainQueue,
@@ -68,6 +68,16 @@ app.get('/api/stats/:playerId', (req, res) => {
   const stats = getPlayerStats(pid);
   if (!stats) { res.status(404).json({ error: 'Player not found' }); return; }
   res.json(stats);
+});
+
+// Global leaderboard — top 20 players with ≥3 matches
+app.get('/api/leaderboard', (_req, res) => {
+  res.json(getLeaderboard());
+});
+
+// Live online count — total connected sockets
+app.get('/api/online', (_req, res) => {
+  res.json({ count: io.engine.clientsCount });
 });
 
 // Serve built web app in production

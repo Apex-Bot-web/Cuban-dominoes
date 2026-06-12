@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { clsx } from 'clsx';
-import type { BotLevel, Seat } from '@dominoes/engine';
+import type { BotLevel, Seat, Tile } from '@dominoes/engine';
 import { partnerOf } from '@dominoes/engine';
 import { Board } from '../components/Board';
 import { MatchOverScreen } from '../components/MatchOverScreen';
@@ -11,6 +11,7 @@ import { ScoreBar } from '../components/ScoreBar';
 import { ScoreScreen } from '../components/ScoreScreen';
 import { useGame } from '../game/useGame';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 
 const LEFT_SEAT: Seat = 3;
 const TOP_SEAT: Seat = 2;
@@ -51,6 +52,34 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
   }, [salidaCountdown]);
 
   const { volume, setVolume } = useBackgroundMusic();
+  const { play } = useSoundEffects();
+
+  // Sound effects: tile place (board grows), pass, deal (new hand), win/lose
+  const prevBoardLenRef = useRef(0);
+  const prevPassLenRef  = useRef(0);
+  const prevHandNumRef  = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    const bl = view.board.length;
+    const pl = view.passHistory.length;
+    const hn = view.handNumber;
+    if (bl > prevBoardLenRef.current) play('tilePlace');
+    if (pl > prevPassLenRef.current)  play('pass');
+    if (prevHandNumRef.current !== undefined && hn !== prevHandNumRef.current) play('deal');
+    prevBoardLenRef.current = bl;
+    prevPassLenRef.current  = pl;
+    prevHandNumRef.current  = hn;
+  }, [view.board.length, view.passHistory.length, view.handNumber, play]);
+
+  useEffect(() => {
+    if (phase === 'match-over' && match.winnerTeam !== undefined) {
+      play(match.winnerTeam === 0 ? 'win' : 'lose');
+    }
+  }, [phase, match.winnerTeam, play]);
+
+  function handleSelectTile(tile: Tile) {
+    play('tileSelect');
+    selectTile(tile);
+  }
 
   const HUMAN_SEAT: Seat = 0;
   const PARTNER_SEAT: Seat = partnerOf(HUMAN_SEAT);
@@ -145,7 +174,7 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
           selectedTile={selectedTile}
           isMyTurn={isMyTurn}
           choosingSide={choosingSide}
-          onSelect={selectTile}
+          onSelect={handleSelectTile}
           onCancelSelection={cancelSelection}
           handNumber={handNumber}
         />

@@ -26,6 +26,10 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_matches_player ON matches(player_id);
+`);
+
 const stmtUpsert = db.prepare(
   `INSERT INTO players (player_id, display_name) VALUES (?, ?)
    ON CONFLICT (player_id) DO UPDATE SET display_name = excluded.display_name`,
@@ -65,6 +69,37 @@ export interface PlayerStatsView {
   totalPointsScored: number;
   totalHandsPlayed: number;
   currentStreak: number;
+}
+
+const stmtLeaderboard = db.prepare(`
+  SELECT p.display_name, COUNT(*) AS mp,
+    SUM(m.won) AS w,
+    ROUND(100.0 * SUM(m.won) / COUNT(*), 0) AS wr
+  FROM matches m
+  JOIN players p ON p.player_id = m.player_id
+  GROUP BY m.player_id
+  HAVING mp >= 3
+  ORDER BY w DESC, wr DESC
+  LIMIT 20
+`);
+
+export interface LeaderboardEntry {
+  displayName: string;
+  matchesPlayed: number;
+  wins: number;
+  winRate: number;
+}
+
+export function getLeaderboard(): LeaderboardEntry[] {
+  const rows = stmtLeaderboard.all() as {
+    display_name: string; mp: number; w: number; wr: number;
+  }[];
+  return rows.map((r) => ({
+    displayName: r.display_name,
+    matchesPlayed: r.mp,
+    wins: r.w,
+    winRate: r.wr,
+  }));
 }
 
 export function getPlayerStats(playerId: string): PlayerStatsView | null {

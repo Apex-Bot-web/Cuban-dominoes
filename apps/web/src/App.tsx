@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { AccountSetupScreen } from './screens/AccountSetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { LeaderboardScreen } from './screens/LeaderboardScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { MatchmakingScreen } from './screens/MatchmakingScreen';
 import { MultiplayerGameScreen } from './screens/MultiplayerGameScreen';
@@ -20,7 +21,8 @@ type Screen =
   | { tag: 'lobby'; socket: Socket; room: RoomView }
   | { tag: 'matchmaking'; socket: Socket; displayName: string }
   | { tag: 'mp-game'; socket: Socket; view: PlayerView; room: RoomView }
-  | { tag: 'stats' };
+  | { tag: 'stats' }
+  | { tag: 'leaderboard' };
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() =>
@@ -58,6 +60,7 @@ export default function App() {
             setScreen({ tag: 'matchmaking', socket, displayName })
           }
           onStats={() => setScreen({ tag: 'stats' })}
+          onLeaderboard={() => setScreen({ tag: 'leaderboard' })}
           onEditAccount={() => setScreen({ tag: 'account-setup' })}
         />
       )}
@@ -67,6 +70,7 @@ export default function App() {
       )}
 
       {screen.tag === 'stats' && <StatsScreen onBack={() => setScreen({ tag: 'home' })} />}
+      {screen.tag === 'leaderboard' && <LeaderboardScreen onBack={() => setScreen({ tag: 'home' })} />}
 
       {screen.tag === 'matchmaking' && (
         <MatchmakingScreen

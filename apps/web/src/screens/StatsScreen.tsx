@@ -2,6 +2,61 @@ import { useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import type { PlayerStatsView } from '../types/socket';
 
+// ── Achievements ──────────────────────────────────────────────────────────────
+
+const ACHIEVEMENTS: {
+  id: string;
+  emoji: string;
+  label: string;
+  desc: string;
+  earned: (s: PlayerStatsView) => boolean;
+}[] = [
+  { id: 'first',    emoji: '🎉', label: 'First Win',    desc: 'Win your first match',             earned: (s) => s.wins >= 1 },
+  { id: 'five',     emoji: '⚡', label: 'On a Roll',    desc: 'Win 5 matches',                    earned: (s) => s.wins >= 5 },
+  { id: 'veteran',  emoji: '🎖', label: 'Veteran',      desc: 'Play 10 matches',                  earned: (s) => s.matchesPlayed >= 10 },
+  { id: 'streak3',  emoji: '🔥', label: 'Hot Streak',   desc: 'Win 3 in a row',                   earned: (s) => s.currentStreak >= 3 },
+  { id: 'sharp',    emoji: '🧠', label: 'Sharp Mind',   desc: '60%+ win rate (5+ games)',         earned: (s) => s.matchesPlayed >= 5 && s.winRate >= 60 },
+  { id: 'fifty',    emoji: '🏆', label: 'Champion',     desc: 'Win 50 matches',                   earned: (s) => s.wins >= 50 },
+  { id: 'century',  emoji: '💯', label: 'Centurion',    desc: 'Score 1,000+ total points',        earned: (s) => s.totalPointsScored >= 1000 },
+  { id: 'hundred',  emoji: '👑', label: 'Domino King',  desc: 'Play 100 matches',                 earned: (s) => s.matchesPlayed >= 100 },
+];
+
+function AchievementGrid({ stats }: { stats: PlayerStatsView }) {
+  const earned = ACHIEVEMENTS.filter((a) => a.earned(stats));
+  const locked = ACHIEVEMENTS.filter((a) => !a.earned(stats));
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+      <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest mb-3">
+        Achievements — {earned.length}/{ACHIEVEMENTS.length}
+      </p>
+      <div className="grid grid-cols-4 gap-2">
+        {ACHIEVEMENTS.map((a) => {
+          const done = a.earned(stats);
+          return (
+            <div
+              key={a.id}
+              className={clsx(
+                'flex flex-col items-center gap-1 rounded-xl p-2 text-center transition-all',
+                done ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-white/5 border border-white/5 opacity-40',
+              )}
+            >
+              <span className="text-2xl leading-none">{a.emoji}</span>
+              <span className={clsx('text-[9px] font-bold leading-tight', done ? 'text-white' : 'text-white/50')}>
+                {a.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {locked.length > 0 && (
+        <p className="text-white/25 text-[10px] mt-3 text-center">
+          Next: {locked[0]!.desc}
+        </p>
+      )}
+    </div>
+  );
+}
+
 const SERVER_URL =
   (import.meta.env['VITE_SERVER_URL'] as string | undefined) ??
   (import.meta.env.DEV ? 'http://localhost:3001' : window.location.origin);
@@ -135,6 +190,9 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
                 </div>
               </div>
             </div>
+
+            {/* Achievements */}
+            <AchievementGrid stats={stats} />
           </div>
         )}
       </div>
