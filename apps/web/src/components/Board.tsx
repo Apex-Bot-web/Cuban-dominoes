@@ -57,19 +57,31 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
     return () => obs.disconnect();
   }, []);
 
-  // Track newest tile for pop animation
-  const prevLengthRef = useRef(board.length);
+  // Track newest tile for pop/ripple animation — must detect which END was played
+  const prevBoardRef = useRef<readonly Tile[]>(board);
   const [newestIdx, setNewestIdx] = useState<number | null>(null);
   useEffect(() => {
-    if (board.length > prevLengthRef.current) {
-      setNewestIdx(board.length - 1);
-      const t = setTimeout(() => setNewestIdx(null), 300);
-      prevLengthRef.current = board.length;
-      return () => clearTimeout(t);
+    const prev = prevBoardRef.current;
+    prevBoardRef.current = board;
+
+    if (board.length <= prev.length) {
+      if (board.length !== prev.length) setNewestIdx(null);
+      return;
     }
-    if (board.length !== prevLengthRef.current) setNewestIdx(null);
-    prevLengthRef.current = board.length;
-  }, [board.length]);
+
+    // Left-end play: board[0] changes (new tile prepended, shifting all others)
+    const firstOld = prev[0];
+    const firstNew = board[0];
+    const addedToLeft =
+      prev.length > 0 &&
+      firstOld !== undefined &&
+      firstNew !== undefined &&
+      (firstNew[0] !== firstOld[0] || firstNew[1] !== firstOld[1]);
+
+    setNewestIdx(addedToLeft ? 0 : board.length - 1);
+    const t = setTimeout(() => setNewestIdx(null), 300);
+    return () => clearTimeout(t);
+  }, [board]);
 
   if (board.length === 0) {
     return (
