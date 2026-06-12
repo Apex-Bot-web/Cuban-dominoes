@@ -39,6 +39,13 @@ export interface QueueUpdate {
   position: number;
 }
 
+export interface FriendView {
+  playerId: string;
+  displayName: string;
+  friendCode: string;
+  online: boolean;
+}
+
 export interface PlayerStatsView {
   displayName: string;
   matchesPlayed: number;

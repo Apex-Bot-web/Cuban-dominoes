@@ -28,6 +28,7 @@ interface HomeScreenProps {
   onStats: () => void;
   onLeaderboard: () => void;
   onEditAccount: () => void;
+  onFriends: () => void;
 }
 
 const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
@@ -36,7 +37,7 @@ const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
   { level: 'duro',  emoji: '🧠', label: 'Hard'  },
 ];
 
-export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLeaderboard, onEditAccount }: HomeScreenProps) {
+export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLeaderboard, onEditAccount, onFriends }: HomeScreenProps) {
   const [displayName] = useState(getSavedName);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -44,6 +45,17 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLe
   const [botLevel, setBotLevel] = useState<BotLevel>('medio');
   const [onlineCount, setOnlineCount] = useState<number | null>(null);
   const streak = useLoginStreak();
+
+  // Presence heartbeat while on home screen
+  useEffect(() => {
+    const pid = localStorage.getItem('dominoes-player-id');
+    if (!pid) return;
+    const beat = () =>
+      fetch(`${SERVER_URL}/api/heartbeat/${encodeURIComponent(pid)}`, { method: 'POST' }).catch(() => {});
+    void beat();
+    const iv = setInterval(beat, 60_000);
+    return () => clearInterval(iv);
+  }, []);
 
   useEffect(() => {
     fetch(`${SERVER_URL}/api/online`)
@@ -159,6 +171,14 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLe
             <span className="text-orange-300 font-black text-xs tabular-nums">{streak}</span>
           </div>
         )}
+
+        <button
+          onClick={onFriends}
+          className="w-12 h-12 flex items-center justify-center bg-white/10 active:bg-white/20 border border-white/15 rounded-2xl transition-colors shrink-0 text-xl"
+          title="Friends"
+        >
+          👥
+        </button>
 
         <button
           onClick={onLeaderboard}

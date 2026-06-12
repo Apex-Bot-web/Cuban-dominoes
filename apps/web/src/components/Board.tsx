@@ -30,8 +30,8 @@ function buildSnakeRows(board: readonly Tile[], tilesPerRow: number): SnakeRow[]
   return rows;
 }
 
-// Each board slot is one landscape tile wide (doubles are portrait but narrow)
-const TILE_SLOT = TILE_SIZES.md.half * 2 + TILE_SIZES.md.gap + 4;
+// Each board slot is one landscape tile wide — using sm size for mobile
+const TILE_SLOT = TILE_SIZES.sm.half * 2 + TILE_SIZES.sm.gap + 4;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -56,6 +56,9 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
     obs.observe(el);
     return () => obs.disconnect();
   }, []);
+
+  // Auto-scroll to newest tile so far-end plays are always visible
+  const newestTileRef = useRef<HTMLDivElement>(null);
 
   // Track newest tile for pop/ripple animation — must detect which END was played
   const prevBoardRef = useRef<readonly Tile[]>(board);
@@ -82,6 +85,13 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
     const t = setTimeout(() => setNewestIdx(null), 300);
     return () => clearTimeout(t);
   }, [board]);
+
+  // Scroll the newest tile into view whenever it changes
+  useEffect(() => {
+    if (newestIdx !== null) {
+      newestTileRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [newestIdx]);
 
   if (board.length === 0) {
     return (
@@ -142,7 +152,7 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
 
               const isNewest = globalIdx === newestIdx;
               return (
-                <div key={ti} className="relative">
+                <div key={ti} className="relative" ref={isNewest ? newestTileRef : undefined}>
                   <div className={isNewest ? (dbl ? 'animate-double-spin' : 'animate-tile-pop') : undefined}>
                     <DominoTile
                       tile={tile}
@@ -150,7 +160,7 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
                       orientation={dbl ? 'v' : 'h'}
                       // Doubles don't need flipping — both halves are identical
                       flipped={dbl ? false : row.flipped}
-                      size="md"
+                      size="sm"
                       state={isExposed ? 'selected' : 'normal'}
                     />
                   </div>

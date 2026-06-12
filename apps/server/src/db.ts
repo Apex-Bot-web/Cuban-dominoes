@@ -30,10 +30,39 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_matches_player ON matches(player_id);
 `);
 
+// Migration: add friend_code column to existing installs
+try { db.exec(`ALTER TABLE players ADD COLUMN friend_code TEXT`); } catch {}
+db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_players_friend_code ON players(friend_code)`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS friends (
+    player_id        TEXT NOT NULL REFERENCES players(player_id),
+    friend_player_id TEXT NOT NULL REFERENCES players(player_id),
+    created_at       INTEGER NOT NULL DEFAULT (unixepoch()),
+    PRIMARY KEY (player_id, friend_player_id)
+  )
+`);
+
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function generateFriendCode(): string {
+  let code: string;
+  const check = db.prepare('SELECT 1 FROM players WHERE friend_code = ?');
+  do {
+    code = Array.from({ length: 6 }, () =>
+      CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)] as string,
+    ).join('');
+  } while (check.get(code));
+  return code;
+}
+
 const stmtUpsert = db.prepare(
   `INSERT INTO players (player_id, display_name) VALUES (?, ?)
    ON CONFLICT (player_id) DO UPDATE SET display_name = excluded.display_name`,
 );
+const stmtAssignCode = db.prepare(
+  `UPDATE players SET friend_code = ? WHERE player_id = ? AND friend_code IS NULL`,
+);
+const stmtGetCode = db.prepare(`SELECT friend_code FROM players WHERE player_id = ?`);
 const stmtInsertMatch = db.prepare(
   `INSERT INTO matches (player_id, won, my_score, their_score, hands_played) VALUES (?, ?, ?, ?, ?)`,
 );
@@ -48,6 +77,23 @@ const stmtRecent = db.prepare(
 
 export function upsertPlayer(playerId: string, displayName: string): void {
   stmtUpsert.run(playerId, displayName);
+  // Assign a friend code on first seen
+  const row = stmtGetCode.get(playerId) as { friend_code: string | null } | undefined;
+  if (row && !row.friend_code) stmtAssignCode.run(generateFriendCode(), playerId);
+}
+
+export function getMyInfo(playerId: string): { displayName: string; friendCode: string } | null {
+  const row = db.prepare('SELECT display_name, friend_code FROM players WHERE player_id = ?').get(playerId) as
+    | { display_name: string; friend_code: string | null }
+    | undefined;
+  if (!row) return null;
+  // Assign code if missing (player registered before friends feature)
+  let code = row.friend_code;
+  if (!code) {
+    code = generateFriendCode();
+    stmtAssignCode.run(code, playerId);
+  }
+  return { displayName: row.display_name, friendCode: code };
 }
 
 export function recordMatchResult(
@@ -99,6 +145,64 @@ export function getLeaderboard(): LeaderboardEntry[] {
     matchesPlayed: r.mp,
     wins: r.w,
     winRate: r.wr,
+  }));
+}
+
+// ── Friends ───────────────────────────────────────────────────────────────────
+
+export interface FriendEntry {
+  playerId: string;
+  displayName: string;
+  friendCode: string;
+}
+
+const stmtLookupByCode = db.prepare(
+  `SELECT player_id, display_name FROM players WHERE friend_code = ?`,
+);
+const stmtAddFriend = db.prepare(
+  `INSERT OR IGNORE INTO friends (player_id, friend_player_id) VALUES (?, ?)`,
+);
+const stmtRemoveFriend = db.prepare(
+  `DELETE FROM friends WHERE player_id = ? AND friend_player_id = ?`,
+);
+const stmtGetFriends = db.prepare(`
+  SELECT p.player_id, p.display_name, COALESCE(p.friend_code, '') AS friend_code
+  FROM friends f JOIN players p ON p.player_id = f.friend_player_id
+  WHERE f.player_id = ?
+  ORDER BY p.display_name
+`);
+
+export function lookupByFriendCode(code: string): { playerId: string; displayName: string } | null {
+  const row = stmtLookupByCode.get(code.toUpperCase().trim()) as
+    | { player_id: string; display_name: string }
+    | undefined;
+  return row ? { playerId: row.player_id, displayName: row.display_name } : null;
+}
+
+export function addFriend(playerId: string, friendPlayerId: string): void {
+  db.transaction(() => {
+    stmtAddFriend.run(playerId, friendPlayerId);
+    stmtAddFriend.run(friendPlayerId, playerId);
+  })();
+}
+
+export function removeFriend(playerId: string, friendPlayerId: string): void {
+  db.transaction(() => {
+    stmtRemoveFriend.run(playerId, friendPlayerId);
+    stmtRemoveFriend.run(friendPlayerId, playerId);
+  })();
+}
+
+export function getFriends(playerId: string): FriendEntry[] {
+  const rows = stmtGetFriends.all(playerId) as {
+    player_id: string;
+    display_name: string;
+    friend_code: string;
+  }[];
+  return rows.map((r) => ({
+    playerId: r.player_id,
+    displayName: r.display_name,
+    friendCode: r.friend_code,
   }));
 }
 

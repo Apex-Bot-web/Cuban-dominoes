@@ -95,7 +95,7 @@ export function PlayerHand({
               <DominoTile
                 tile={tile}
                 orientation="v"
-                size="lg"
+                size="md"
                 state={tileState}
                 onClick={() => {
                   if (isSelected) onCancelSelection();

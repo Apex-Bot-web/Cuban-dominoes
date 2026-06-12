@@ -33,7 +33,9 @@ const PIP_POS: Record<number, [number, number][]> = {
 export const TILE_SIZES = {
   // used for opponent face-down stacks
   xs:  { half: 20, gap: 3 },
-  // board chain tiles (landscape)
+  // board chain tiles on mobile
+  sm:  { half: 28, gap: 3 },
+  // board chain tiles on desktop / player hand
   md:  { half: 40, gap: 4 },
   // player hand tiles (portrait, larger for tapping)
   lg:  { half: 48, gap: 5 },

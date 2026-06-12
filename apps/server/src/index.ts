@@ -25,7 +25,17 @@ import {
   startGame,
 } from './store.js';
 import type { Action, BotLevel, GameConfig, Room, Seat, Team } from './types.js';
-import { getLeaderboard, getPlayerStats, recordMatchResult, upsertPlayer } from './db.js';
+import {
+  addFriend,
+  getFriends,
+  getLeaderboard,
+  getMyInfo,
+  getPlayerStats,
+  lookupByFriendCode,
+  recordMatchResult,
+  removeFriend,
+  upsertPlayer,
+} from './db.js';
 import {
   clearBackfillTimer,
   drainQueue,
@@ -58,6 +68,10 @@ const app = express();
 if (!IS_PROD) app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
+// In-memory presence: playerId → last-seen epoch ms
+const lastSeen = new Map<string, number>();
+const ONLINE_WINDOW_MS = 120_000;
+
 // Health — before static middleware so it always responds
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
@@ -78,6 +92,56 @@ app.get('/api/leaderboard', (_req, res) => {
 // Live online count — total connected sockets
 app.get('/api/online', (_req, res) => {
   res.json({ count: io.engine.clientsCount });
+});
+
+// Presence heartbeat — clients call this every 60s while on HomeScreen / FriendsScreen
+app.post('/api/heartbeat/:playerId', (req, res) => {
+  const pid = req.params['playerId'];
+  if (!pid) { res.status(400).json({ error: 'Missing playerId' }); return; }
+  lastSeen.set(pid, Date.now());
+  res.json({ ok: true });
+});
+
+// My own info (display name + friend code)
+app.get('/api/me/:playerId', (req, res) => {
+  const pid = req.params['playerId'];
+  if (!pid) { res.status(400).json({ error: 'Missing playerId' }); return; }
+  const info = getMyInfo(pid);
+  if (!info) { res.status(404).json({ error: 'Player not found' }); return; }
+  lastSeen.set(pid, Date.now());
+  res.json(info);
+});
+
+// Friends list with online status
+app.get('/api/friends/:playerId', (req, res) => {
+  const pid = req.params['playerId'];
+  if (!pid) { res.status(400).json({ error: 'Missing playerId' }); return; }
+  const now = Date.now();
+  const friends = getFriends(pid).map((f) => ({
+    ...f,
+    online: (lastSeen.get(f.playerId) ?? 0) > now - ONLINE_WINDOW_MS,
+  }));
+  res.json(friends);
+});
+
+// Add friend by friend code
+app.post('/api/friends/:playerId', (req, res) => {
+  const pid = req.params['playerId'];
+  const { friendCode } = req.body as { friendCode?: string };
+  if (!pid || !friendCode) { res.status(400).json({ error: 'Missing fields' }); return; }
+  const target = lookupByFriendCode(friendCode);
+  if (!target) { res.status(404).json({ error: 'No player found with that code' }); return; }
+  if (target.playerId === pid) { res.status(400).json({ error: "That's your own code" }); return; }
+  addFriend(pid, target.playerId);
+  res.json({ ok: true, friend: target });
+});
+
+// Remove friend
+app.delete('/api/friends/:playerId/:friendPlayerId', (req, res) => {
+  const { playerId, friendPlayerId } = req.params;
+  if (!playerId || !friendPlayerId) { res.status(400).json({ error: 'Missing fields' }); return; }
+  removeFriend(playerId, friendPlayerId);
+  res.json({ ok: true });
 });
 
 // Serve built web app in production

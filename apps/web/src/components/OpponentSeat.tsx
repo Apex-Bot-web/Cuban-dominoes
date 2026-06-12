@@ -102,7 +102,7 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
   return (
     <div
       className={clsx(
-        'flex flex-col items-center justify-between py-2 px-1 rounded-xl w-12 transition-all duration-200',
+        'flex flex-col items-center justify-between py-2 px-1 rounded-xl w-10 transition-all duration-200',
         isActive
           ? 'bg-white/15 ring-2 ring-white/40 shadow-lg shadow-white/5'
           : 'bg-black/20',
