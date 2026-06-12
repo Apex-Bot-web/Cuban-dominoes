@@ -115,7 +115,7 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
         <div className="shrink-0 flex items-center justify-center gap-2 py-2 bg-yellow-500/10 border-t border-yellow-500/20">
           <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
           <span className="text-yellow-300/90 text-xs font-black tracking-wide">
-            Eligiendo quién sale en {salidaCountdown}…
+            Choosing who starts in {salidaCountdown}…
           </span>
         </div>
       )}
@@ -132,10 +132,10 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)]" />
           )}
           <span className={isMyTurn ? 'text-[11px] font-black uppercase tracking-widest text-white' : 'text-[11px] font-black uppercase tracking-widest text-white/40'}>
-            Tú
+            You
           </span>
           <span className="text-white/30 text-[10px] font-mono">
-            {view.myHand.length} fichas
+            {view.myHand.length} tiles
           </span>
         </div>
 
@@ -180,18 +180,18 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
         <div className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm">
           <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-8">
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">
-              ¡Ganaron la mano!
+              Your team won the hand!
             </p>
-            <p className="text-white font-black text-xl mb-4">¿Quién sale?</p>
+            <p className="text-white font-black text-xl mb-4">Who starts?</p>
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => pickSalida(HUMAN_SEAT)}
                 className="flex items-center gap-3 bg-white/10 hover:bg-green-500/20 border border-white/15 hover:border-green-500/40 rounded-2xl px-4 py-4 text-left transition-all active:scale-95"
               >
                 <span className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-300 font-black text-sm">
-                  Tú
+                  You
                 </span>
-                <p className="text-white font-black">Yo salgo</p>
+                <p className="text-white font-black">I'll start</p>
                 <span className="ml-auto text-white/30 text-lg">→</span>
               </button>
               <button
@@ -199,9 +199,9 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
                 className="flex items-center gap-3 bg-white/10 hover:bg-green-500/20 border border-white/15 hover:border-green-500/40 rounded-2xl px-4 py-4 text-left transition-all active:scale-95"
               >
                 <span className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white/60 font-black text-sm">
-                  S
+                  P
                 </span>
-                <p className="text-white font-black">Sale mi socio</p>
+                <p className="text-white font-black">My partner starts</p>
                 <span className="ml-auto text-white/30 text-lg">→</span>
               </button>
             </div>

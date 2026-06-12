@@ -3,11 +3,11 @@ import { clsx } from 'clsx';
 import type { Socket } from 'socket.io-client';
 import type { BotLevel, PlayerView, RoomSeatView, RoomView, Seat } from '../types/socket';
 
-const SEAT_LABELS = ['Tú (asiento 0)', 'Asiento 1', 'Asiento 2', 'Asiento 3'];
+const SEAT_LABELS = ['You (seat 0)', 'Seat 1', 'Seat 2', 'Seat 3'];
 const BOT_LEVELS: { level: BotLevel; label: string; desc: string }[] = [
-  { level: 'facil', label: 'Fácil', desc: 'Juega al azar' },
-  { level: 'medio', label: 'Medio', desc: 'Juega pesado' },
-  { level: 'duro', label: 'Duro', desc: 'Cuenta y piensa' },
+  { level: 'facil', label: 'Easy',   desc: 'Plays randomly'   },
+  { level: 'medio', label: 'Medium', desc: 'Plays heavy tiles' },
+  { level: 'duro',  label: 'Hard',   desc: 'Counts & thinks'  },
 ];
 
 interface LobbyScreenProps {
@@ -60,6 +60,7 @@ export function LobbyScreen({ socket, initialRoom, onGameStart, onLeave }: Lobby
 
   const allFilled = room.seats.every((s) => s !== null);
   const canStart = room.isHost && allFilled;
+  const emptyCount = room.seats.filter((s) => !s).length;
 
   return (
     <div className="h-full flex flex-col felt-texture overflow-hidden select-none">
@@ -69,9 +70,9 @@ export function LobbyScreen({ socket, initialRoom, onGameStart, onLeave }: Lobby
           onClick={onLeave}
           className="text-white/40 hover:text-white transition-colors text-sm font-bold"
         >
-          ← Salir
+          ← Leave
         </button>
-        <span className="flex-1 text-white font-black text-base">Sala</span>
+        <span className="flex-1 text-white font-black text-base">Room</span>
         {/* Room code badge */}
         <button
           onClick={copyCode}
@@ -84,7 +85,7 @@ export function LobbyScreen({ socket, initialRoom, onGameStart, onLeave }: Lobby
 
       {/* Seats */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
-        <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Jugadores</p>
+        <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-1">Players</p>
 
         {room.seats.map((seat, i) => (
           <SeatCard
@@ -103,7 +104,7 @@ export function LobbyScreen({ socket, initialRoom, onGameStart, onLeave }: Lobby
 
         {!room.isHost && (
           <p className="text-white/30 text-sm text-center mt-4">
-            Esperando que el anfitrión inicie la partida…
+            Waiting for the host to start the game…
           </p>
         )}
       </div>
@@ -121,7 +122,9 @@ export function LobbyScreen({ socket, initialRoom, onGameStart, onLeave }: Lobby
                 : 'bg-white/10 text-white/25 cursor-not-allowed',
             )}
           >
-            {allFilled ? '¡Iniciar Partida!' : `Falta${room.seats.filter(s => !s).length > 1 ? 'n' : ''} ${room.seats.filter(s => !s).length} jugador${room.seats.filter(s => !s).length !== 1 ? 'es' : ''}`}
+            {allFilled
+              ? 'Start Game!'
+              : `Waiting for ${emptyCount} more player${emptyCount !== 1 ? 's' : ''}`}
           </button>
         </div>
       )}
@@ -137,7 +140,7 @@ export function LobbyScreen({ socket, initialRoom, onGameStart, onLeave }: Lobby
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-white font-black text-base mb-4">
-              Añadir bot — {SEAT_LABELS[botPickSeat]}
+              Add bot — {SEAT_LABELS[botPickSeat]}
             </p>
             <div className="flex flex-col gap-2">
               {BOT_LEVELS.map(({ level, label, desc }) => (
@@ -176,7 +179,7 @@ function SeatCard({ index, seat, isHost, onAddBot, onRemoveBot }: SeatCardProps)
     return (
       <div className="flex items-center gap-3 bg-black/20 border border-white/10 border-dashed rounded-xl px-4 py-3">
         <span className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center text-white/20 text-lg">+</span>
-        <span className="text-white/25 text-sm flex-1">Vacío</span>
+        <span className="text-white/25 text-sm flex-1">Empty</span>
         {isHost && index !== 0 && (
           <button
             onClick={onAddBot}
@@ -228,9 +231,9 @@ function SeatCard({ index, seat, isHost, onAddBot, onRemoveBot }: SeatCardProps)
       />
       <div className="flex-1">
         <p className={clsx('font-bold text-sm', seat.isMe ? 'text-green-300' : 'text-white')}>
-          {seat.displayName} {seat.isMe && <span className="text-green-500/70 text-xs font-normal">(tú)</span>}
+          {seat.displayName} {seat.isMe && <span className="text-green-500/70 text-xs font-normal">(you)</span>}
         </p>
-        <p className="text-white/30 text-xs">{seat.connected ? 'Conectado' : 'Desconectado'}</p>
+        <p className="text-white/30 text-xs">{seat.connected ? 'Connected' : 'Disconnected'}</p>
       </div>
     </div>
   );

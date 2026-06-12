@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Socket } from 'socket.io-client';
+import { AccountSetupScreen } from './screens/AccountSetupScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { MatchmakingScreen } from './screens/MatchmakingScreen';
@@ -8,7 +9,12 @@ import { SoloGameScreen } from './screens/SoloGameScreen';
 import { StatsScreen } from './screens/StatsScreen';
 import type { BotLevel, PlayerView, RoomView } from './types/socket';
 
+function hasAccount(): boolean {
+  return !!localStorage.getItem('dominoes-display-name')?.trim();
+}
+
 type Screen =
+  | { tag: 'account-setup' }
   | { tag: 'home' }
   | { tag: 'solo'; botLevel: BotLevel }
   | { tag: 'lobby'; socket: Socket; room: RoomView }
@@ -17,7 +23,9 @@ type Screen =
   | { tag: 'stats' };
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ tag: 'home' });
+  const [screen, setScreen] = useState<Screen>(() =>
+    hasAccount() ? { tag: 'home' } : { tag: 'account-setup' },
+  );
 
   // Clean up socket on unmount (shouldn't happen but be safe)
   useEffect(() => {
@@ -38,6 +46,10 @@ export default function App() {
 
   return (
     <div className="h-full overflow-hidden">
+      {screen.tag === 'account-setup' && (
+        <AccountSetupScreen onDone={() => setScreen({ tag: 'home' })} />
+      )}
+
       {screen.tag === 'home' && (
         <HomeScreen
           onSolo={(level) => setScreen({ tag: 'solo', botLevel: level })}
@@ -46,6 +58,7 @@ export default function App() {
             setScreen({ tag: 'matchmaking', socket, displayName })
           }
           onStats={() => setScreen({ tag: 'stats' })}
+          onEditAccount={() => setScreen({ tag: 'account-setup' })}
         />
       )}
 

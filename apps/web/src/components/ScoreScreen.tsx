@@ -5,8 +5,8 @@ import { teamOf } from '@dominoes/engine';
 import type { HandResult } from '@dominoes/engine';
 import type { MoveEntry } from '../game/useGame';
 
-// Relative position labels: mySeat is 'Tú', seats going clockwise are Este/Socio/Oeste
-const REL_LABEL = ['Tú', 'Este', 'Socio', 'Oeste'];
+// Relative position labels: mySeat is 'You', seats going clockwise are Right/Partner/Left
+const REL_LABEL = ['You', 'Right', 'Partner', 'Left'];
 
 function AnimatedNumber({ value, duration = 550 }: { value: number; duration?: number }) {
   const [current, setCurrent] = useState(0);
@@ -53,14 +53,14 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
 
   const headline =
     isTie
-      ? '¡Tranque empatado!'
+      ? 'Blocked — Tie!'
       : result.type === 'domino'
         ? result.winnerSeat === mySeat
-          ? '¡Dominó! — Ganaste'
-          : `¡Dominó! — Ganó ${REL_LABEL[relSeats.indexOf(result.winnerSeat)] ?? 'Bot'}`
+          ? 'Domino! — You Won'
+          : `Domino! — ${REL_LABEL[relSeats.indexOf(result.winnerSeat)] ?? 'Bot'} Won`
         : weWon
-          ? '¡Tranque! — Ganamos'
-          : '¡Tranque! — Ellos ganan';
+          ? 'Blocked! — We Win'
+          : 'Blocked! — They Win';
 
   return (
     <div className="absolute inset-0 z-20 flex items-end justify-center pb-4 bg-black/60 backdrop-blur-md">
@@ -114,10 +114,10 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
         <div className="flex items-center justify-between px-6 py-3 border-b border-white/10">
           <div className="text-center">
             <div className="text-2xl font-black tabular-nums text-green-300">{myScore}</div>
-            <div className="text-[10px] font-bold uppercase tracking-wide text-green-400/60">Nosotros</div>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-green-400/60">Us</div>
           </div>
           <div className="text-center">
-            <span className="text-white/30 text-xs font-mono">Mano {handNumber}</span>
+            <span className="text-white/30 text-xs font-mono">Hand {handNumber}</span>
             <div className="w-28 mt-1 relative">
               <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div
@@ -135,7 +135,7 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
           </div>
           <div className="text-center">
             <div className="text-2xl font-black tabular-nums text-red-300">{theirScore}</div>
-            <div className="text-[10px] font-bold uppercase tracking-wide text-red-400/60">Ellos</div>
+            <div className="text-[10px] font-bold uppercase tracking-wide text-red-400/60">Them</div>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
               className="w-full text-left flex items-center justify-between px-4 py-2.5 text-white/40 hover:text-white/60 transition-colors"
             >
               <span className="text-[11px] font-bold uppercase tracking-widest">
-                Ver jugadas ({moveLog.length})
+                Show moves ({moveLog.length})
               </span>
               <span className="text-xs">{showLog ? '↑' : '↓'}</span>
             </button>
@@ -155,7 +155,7 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
               <div className="max-h-36 overflow-y-auto no-scrollbar px-4 pb-3 flex flex-col gap-1">
                 {moveLog.map((move, i) => {
                   const relIdx = relSeats.indexOf(move.seat);
-                  const label = REL_LABEL[relIdx] ?? `Asiento ${move.seat}`;
+                  const label = REL_LABEL[relIdx] ?? `Seat ${move.seat}`;
                   const isMyTeamMove = teamOf(move.seat) === myTeam;
                   return (
                     <div key={i} className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
                       {move.type === 'play' ? (
                         <span className="text-white/70 text-[11px] font-mono">{move.tile[0]}•{move.tile[1]}</span>
                       ) : (
-                        <span className="text-white/30 text-[11px] italic">pasó</span>
+                        <span className="text-white/30 text-[11px] italic">passed</span>
                       )}
                     </div>
                   );
@@ -181,7 +181,7 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
             onClick={onNext}
             className="w-full font-black text-base rounded-2xl py-3.5 bg-felt-light hover:bg-felt text-white active:scale-95 transition-colors"
           >
-            Siguiente mano →
+            Next hand →
           </button>
         </div>
       </div>

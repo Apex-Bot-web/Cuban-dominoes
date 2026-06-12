@@ -25,25 +25,21 @@ interface HomeScreenProps {
   onMultiplayer: (socket: Socket, room: RoomView) => void;
   onMatchmaking: (socket: Socket, displayName: string) => void;
   onStats: () => void;
+  onEditAccount: () => void;
 }
 
 const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
-  { level: 'facil', emoji: '😌', label: 'Fácil' },
-  { level: 'medio', emoji: '🤔', label: 'Medio' },
-  { level: 'duro',  emoji: '🧠', label: 'Duro'  },
+  { level: 'facil', emoji: '😌', label: 'Easy' },
+  { level: 'medio', emoji: '🤔', label: 'Medium' },
+  { level: 'duro',  emoji: '🧠', label: 'Hard'  },
 ];
 
-export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: HomeScreenProps) {
-  const [displayName, setDisplayName] = useState(getSavedName);
+export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onEditAccount }: HomeScreenProps) {
+  const [displayName] = useState(getSavedName);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<'create' | 'join' | 'queue' | null>(null);
   const [botLevel, setBotLevel] = useState<BotLevel>('medio');
-
-  function saveName(name: string) {
-    setDisplayName(name);
-    localStorage.setItem('dominoes-display-name', name);
-  }
 
   function connect(onConnected: (socket: Socket) => void) {
     const playerId = getOrCreatePlayerId();
@@ -54,7 +50,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
 
     socket.once('connect', () => onConnected(socket));
     socket.once('connect_error', (err) => {
-      setError(`No se puede conectar al servidor: ${err.message}`);
+      setError(`Could not connect to server: ${err.message}`);
       setLoading(null);
       socket.disconnect();
     });
@@ -62,7 +58,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
 
   function handleCreate() {
     const name = displayName.trim();
-    if (!name) { setError('Escribe tu nombre primero'); return; }
+    if (!name) { setError('Please set a display name first'); return; }
     setError('');
     setLoading('create');
 
@@ -82,7 +78,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
 
   function handleFindMatch() {
     const name = displayName.trim();
-    if (!name) { setError('Escribe tu nombre primero'); return; }
+    if (!name) { setError('Please set a display name first'); return; }
     setError('');
     setLoading('queue');
 
@@ -95,8 +91,8 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
   function handleJoin() {
     const name = displayName.trim();
     const code = joinCode.trim().toUpperCase();
-    if (!name) { setError('Escribe tu nombre primero'); return; }
-    if (!code) { setError('Escribe el código de sala'); return; }
+    if (!name) { setError('Please set a display name first'); return; }
+    if (!code) { setError('Enter a room code'); return; }
     setError('');
     setLoading('join');
 
@@ -115,32 +111,27 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
   }
 
   return (
-    <div className="h-full flex flex-col items-center justify-center gap-8 px-6 felt-texture">
+    <div className="h-full flex flex-col items-center justify-center gap-6 px-6 felt-texture">
       {/* Title */}
       <div className="text-center">
         <div className="text-6xl mb-3 leading-none select-none">🁣</div>
-        <h1 className="text-4xl font-black text-white tracking-tight">Dominó Cubano</h1>
-        <p className="text-white/40 text-sm mt-1">Double-9 · 4 jugadores · hasta 100 puntos</p>
+        <h1 className="text-4xl font-black text-white tracking-tight">Cuban Domino</h1>
+        <p className="text-white/40 text-sm mt-1">Double-9 · 4 players · up to 100 points</p>
       </div>
 
-      {/* Name input */}
-      <div className="w-full max-w-xs">
-        <label className="block text-white/60 text-xs font-bold uppercase tracking-widest mb-1.5">
-          Tu nombre
-        </label>
-        <input
-          type="text"
-          value={displayName}
-          onChange={(e) => saveName(e.target.value)}
-          placeholder="ej. Carlos"
-          maxLength={20}
-          className="w-full bg-white/10 border border-white/20 text-white placeholder-white/25 rounded-xl px-4 py-3 text-base font-semibold outline-none focus:border-white/50 focus:bg-white/15 transition-colors"
-        />
-      </div>
+      {/* Account pill */}
+      <button
+        onClick={onEditAccount}
+        className="flex items-center gap-2 bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl px-4 py-2.5 transition-colors"
+      >
+        <span className="text-lg">👤</span>
+        <span className="text-white font-bold text-sm">{displayName || 'Set your name'}</span>
+        <span className="text-white/30 text-xs">✎</span>
+      </button>
 
       {/* Error */}
       {error && (
-        <p className="text-red-400 text-sm font-semibold text-center -mt-4 max-w-xs">{error}</p>
+        <p className="text-red-400 text-sm font-semibold text-center -mt-2 max-w-xs">{error}</p>
       )}
 
       {/* Buttons */}
@@ -182,7 +173,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
               : 'bg-purple-600 hover:bg-purple-500 text-white',
           )}
         >
-          {loading === 'queue' ? 'Conectando…' : '🌐 Jugar ahora'}
+          {loading === 'queue' ? 'Connecting…' : '🌐 Play Now'}
         </button>
 
         {/* Stats */}
@@ -190,12 +181,12 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
           onClick={onStats}
           className="w-full bg-white/10 hover:bg-white/15 text-white/60 hover:text-white font-bold text-base rounded-2xl py-3 transition-colors active:scale-95"
         >
-          📊 Ver mis estadísticas
+          📊 My Stats
         </button>
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-white/15" />
-          <span className="text-white/30 text-xs font-bold uppercase tracking-widest">o en línea</span>
+          <span className="text-white/30 text-xs font-bold uppercase tracking-widest">or private room</span>
           <div className="flex-1 h-px bg-white/15" />
         </div>
 
@@ -210,7 +201,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
               : 'bg-green-600 hover:bg-green-500 text-white',
           )}
         >
-          {loading === 'create' ? 'Creando…' : '+ Crear sala'}
+          {loading === 'create' ? 'Creating…' : '+ Create Room'}
         </button>
 
         {/* Join */}
@@ -220,7 +211,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
             value={joinCode}
             onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-            placeholder="CÓDIGO"
+            placeholder="CODE"
             maxLength={6}
             className="flex-1 bg-white/10 border border-white/20 text-white placeholder-white/25 rounded-xl px-3 py-3 text-base font-black text-center tracking-widest outline-none focus:border-white/50 transition-colors uppercase"
           />
@@ -234,7 +225,7 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: Ho
                 : 'bg-blue-600 hover:bg-blue-500 text-white',
             )}
           >
-            {loading === 'join' ? '…' : 'Unirse'}
+            {loading === 'join' ? '…' : 'Join'}
           </button>
         </div>
       </div>

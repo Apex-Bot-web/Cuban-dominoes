@@ -110,7 +110,7 @@ export function MultiplayerGameScreen({
 
   function seatName(seat: Seat): string {
     const slot = room.seats[seat];
-    if (!slot) return `Asiento ${seat}`;
+    if (!slot) return `Seat ${seat}`;
     return slot.displayName;
   }
 
@@ -193,7 +193,7 @@ export function MultiplayerGameScreen({
         <div className="shrink-0 flex items-center justify-center gap-2 py-2 bg-yellow-500/10 border-y border-yellow-500/20">
           <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
           <span className="text-yellow-300/90 text-xs font-black tracking-wide">
-            Eligiendo quién sale en {salidaCountdown}…
+            Choosing who starts in {salidaCountdown}…
           </span>
         </div>
       )}
@@ -219,7 +219,7 @@ export function MultiplayerGameScreen({
               {seatName(mySeat)}
             </span>
             <span className="text-white/30 text-[10px] font-mono shrink-0">
-              {view.myHand.length} fichas
+              {view.myHand.length} tiles
             </span>
           </div>
 
@@ -230,7 +230,7 @@ export function MultiplayerGameScreen({
                 onClick={pass}
                 className="bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-black uppercase tracking-widest rounded-lg px-3 py-1 transition-colors active:scale-95"
               >
-                Pasar →
+                Pass →
               </button>
             )}
 
@@ -288,9 +288,9 @@ export function MultiplayerGameScreen({
         <div className="absolute inset-0 z-30 flex items-end bg-black/50 backdrop-blur-sm">
           <div className="w-full bg-felt-dark border-t border-white/15 rounded-t-3xl px-5 pt-5 pb-safe pb-6">
             <p className="text-white/50 text-xs font-bold uppercase tracking-widest mb-1">
-              {choosingSalida.seats.includes(mySeat) ? '¡Tu equipo ganó!' : 'El equipo ganador elige...'}
+              {choosingSalida.seats.includes(mySeat) ? 'Your team won!' : 'The winning team picks...'}
             </p>
-            <p className="text-white font-black text-xl mb-4">¿Quién sale?</p>
+            <p className="text-white font-black text-xl mb-4">Who starts?</p>
 
             {choosingSalida.seats.includes(mySeat) ? (
               <div className="flex flex-col gap-3">
@@ -305,7 +305,7 @@ export function MultiplayerGameScreen({
                     </span>
                     <div>
                       <p className="text-white font-black">{seatName(seat)}</p>
-                      {seat === mySeat && <p className="text-green-400/70 text-xs">Tú</p>}
+                      {seat === mySeat && <p className="text-green-400/70 text-xs">You</p>}
                     </div>
                     <span className="ml-auto text-white/30 text-lg">→</span>
                   </button>
@@ -315,7 +315,7 @@ export function MultiplayerGameScreen({
               <div className="flex items-center gap-3 py-4">
                 <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
                 <p className="text-white/50 text-sm">
-                  Esperando que el equipo ganador elija quién sale…
+                  Waiting for the winning team to choose who starts…
                 </p>
               </div>
             )}
@@ -351,7 +351,7 @@ export function MultiplayerGameScreen({
             {/* Message history */}
             <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-3 flex flex-col gap-2.5 min-h-0">
               {chatHistory.length === 0 ? (
-                <p className="text-white/25 text-sm text-center py-6">Nadie ha dicho nada todavía 👀</p>
+                <p className="text-white/25 text-sm text-center py-6">No messages yet 👀</p>
               ) : (
                 chatHistory.map((msg) => {
                   const isMe = msg.seat === mySeat;

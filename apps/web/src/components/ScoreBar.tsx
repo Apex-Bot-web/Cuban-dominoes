@@ -40,7 +40,7 @@ export function ScoreBar({
 
       {/* My team */}
       <div className="flex flex-col items-center min-w-[52px]">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/80">Nosotros</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/80">Us</span>
         <span className="text-2xl font-black text-white tabular-nums leading-none">{myScore}</span>
       </div>
 
@@ -66,14 +66,14 @@ export function ScoreBar({
 
       {/* Opponent team */}
       <div className="flex flex-col items-center min-w-[52px]">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-red-400/80">Ellos</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-red-400/80">Them</span>
         <span className="text-2xl font-black text-white tabular-nums leading-none">{theirScore}</span>
       </div>
 
       {/* Meta */}
       <div className="flex flex-col items-end gap-0.5 min-w-[42px] shrink-0">
-        <span className="text-white/40 text-[10px] font-mono">Mano {handNumber}</span>
-        <span className="text-white/30 text-[10px] font-mono">{sleepingCount} duerm.</span>
+        <span className="text-white/40 text-[10px] font-mono">Hand {handNumber}</span>
+        <span className="text-white/30 text-[10px] font-mono">{sleepingCount} sleep.</span>
         {botThinking && (
           <span className="text-yellow-400 text-[10px] font-black tracking-widest animate-pulse">●●●</span>
         )}
@@ -98,7 +98,7 @@ export function ScoreBar({
                 onClick={() => setShowSlider(false)}
               />
               <div className="absolute right-0 top-full mt-2 z-50 bg-felt-dark border border-white/15 rounded-2xl px-4 py-3 shadow-2xl flex flex-col items-center gap-2 min-w-[130px]">
-                <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Música</span>
+                <span className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Music</span>
                 <input
                   type="range"
                   min={0}

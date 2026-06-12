@@ -52,9 +52,9 @@ export function MatchmakingScreen({
     <div className="h-full flex flex-col items-center justify-center gap-8 px-6 felt-texture">
       <div className="text-center">
         <div className="text-6xl mb-3 select-none animate-bounce">🎲</div>
-        <h1 className="text-2xl font-black text-white">Buscando partida…</h1>
+        <h1 className="text-2xl font-black text-white">Finding a match…</h1>
         <p className="text-white/40 text-sm mt-1">
-          Se unirán bots si no hay suficientes jugadores en 45 s
+          Bots will fill in if not enough players join in 45s
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export function MatchmakingScreen({
       </div>
 
       <p className="text-white/60 text-base font-bold tabular-nums">
-        {filledSeats} / 4 jugadores encontrados
+        {filledSeats} / 4 players found
       </p>
 
       {error && (
@@ -86,7 +86,7 @@ export function MatchmakingScreen({
         onClick={handleCancel}
         className="text-white/40 hover:text-white/70 text-sm font-bold transition-colors px-6 py-2 rounded-xl hover:bg-white/5"
       >
-        Cancelar búsqueda
+        Cancel search
       </button>
     </div>
   );

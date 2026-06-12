@@ -30,23 +30,23 @@ export function MatchOverScreen({ winnerTeam, teamScores, handNumber, mySeat, on
         >
           <div className="text-6xl mb-3 leading-none">{weWon ? '🏆' : '😤'}</div>
           <div className={clsx('text-3xl font-black', weWon ? 'text-yellow-300' : 'text-red-400')}>
-            {weWon ? '¡Ganamos!' : '¡Perdimos!'}
+            {weWon ? 'We Won!' : 'We Lost!'}
           </div>
           <div className="text-white/40 text-sm mt-1">
-            {handNumber} {handNumber === 1 ? 'mano jugada' : 'manos jugadas'}
+            {handNumber} {handNumber === 1 ? 'hand played' : 'hands played'}
           </div>
         </div>
 
         {/* Scores — Nosotros = my team */}
         <div className="flex items-stretch divide-x divide-white/10 border-y border-white/10">
           <div className={clsx('flex-1 py-5 flex flex-col items-center gap-0.5', !weWon && 'opacity-40')}>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/70">Nosotros</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-green-400/70">Us</span>
             <span className={clsx('text-5xl font-black tabular-nums', weWon ? 'text-green-300' : 'text-white/50')}>
               {myScore}
             </span>
           </div>
           <div className={clsx('flex-1 py-5 flex flex-col items-center gap-0.5', weWon && 'opacity-40')}>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-red-400/70">Ellos</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-red-400/70">Them</span>
             <span className={clsx('text-5xl font-black tabular-nums', !weWon ? 'text-red-300' : 'text-white/50')}>
               {theirScore}
             </span>
@@ -59,14 +59,14 @@ export function MatchOverScreen({ winnerTeam, teamScores, handNumber, mySeat, on
             className="w-full bg-felt-light hover:bg-felt text-white font-black text-lg rounded-2xl py-4 transition-colors active:scale-95"
             onClick={onNewMatch}
           >
-            Jugar de nuevo
+            Play Again
           </button>
           {onLeave && (
             <button
               className="w-full text-white/40 hover:text-white/70 text-sm font-bold py-2 transition-colors"
               onClick={onLeave}
             >
-              Salir
+              Leave
             </button>
           )}
         </div>

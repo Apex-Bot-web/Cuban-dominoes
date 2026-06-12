@@ -56,15 +56,15 @@ export function PlayerHand({
       {/* Status label */}
       <div className="text-xs font-bold tracking-widest uppercase">
         {choosingSide ? (
-          <span className="text-yellow-300">Elige un lado ↑</span>
+          <span className="text-yellow-300">Choose a side ↑</span>
         ) : isMyTurn ? (
           hasPlayable ? (
-            <span className="text-green-300">Tu Turno — toca una ficha</span>
+            <span className="text-green-300">Your Turn — tap a tile</span>
           ) : (
-            <span className="text-orange-300 animate-pulse">Sin jugada — Pasando…</span>
+            <span className="text-orange-300 animate-pulse">No moves — Passing…</span>
           )
         ) : (
-          <span className="text-white/30">Esperando…</span>
+          <span className="text-white/30">Waiting…</span>
         )}
       </div>
 

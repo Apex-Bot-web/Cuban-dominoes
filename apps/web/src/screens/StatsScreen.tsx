@@ -27,7 +27,7 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
 
   const streak = stats?.currentStreak ?? 0;
   const streakLabel =
-    streak === 0 ? '—' : streak > 0 ? `${streak}G 🔥` : `${Math.abs(streak)}P`;
+    streak === 0 ? '—' : streak > 0 ? `${streak}W 🔥` : `${Math.abs(streak)}L`;
 
   return (
     <div className="h-full flex flex-col felt-texture">
@@ -37,16 +37,16 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
           onClick={onBack}
           className="text-white/40 hover:text-white text-sm font-bold transition-colors"
         >
-          ← Atrás
+          ← Back
         </button>
-        <h1 className="text-white font-black text-lg flex-1 text-center">Mis estadísticas</h1>
+        <h1 className="text-white font-black text-lg flex-1 text-center">My Stats</h1>
         <div className="w-14" />
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar px-4 py-6">
         {loading && (
           <div className="flex items-center justify-center py-16">
-            <span className="text-white/40 text-sm animate-pulse">Cargando…</span>
+            <span className="text-white/40 text-sm animate-pulse">Loading…</span>
           </div>
         )}
 
@@ -54,8 +54,8 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
           <div className="flex flex-col items-center justify-center py-16 gap-4 text-center">
             <span className="text-5xl">🎲</span>
             <p className="text-white/50 text-sm max-w-xs">
-              Aún no tienes partidas registradas.<br />
-              Juega una partida en línea para empezar a acumular estadísticas.
+              No matches recorded yet.<br />
+              Play an online match to start tracking your stats.
             </p>
           </div>
         )}
@@ -72,15 +72,15 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-green-900/30 border border-green-500/20 rounded-2xl p-4 text-center">
                 <div className="text-3xl font-black text-green-300 tabular-nums">{stats.wins}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-green-400/60 mt-1">Ganadas</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-green-400/60 mt-1">Won</div>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
                 <div className="text-3xl font-black text-white tabular-nums">{stats.matchesPlayed}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">Jugadas</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">Played</div>
               </div>
               <div className="bg-red-900/20 border border-red-500/15 rounded-2xl p-4 text-center">
                 <div className="text-3xl font-black text-red-300 tabular-nums">{stats.losses}</div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-red-400/50 mt-1">Perdidas</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-red-400/50 mt-1">Lost</div>
               </div>
             </div>
 
@@ -88,7 +88,7 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
             <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-white/50 text-xs font-bold uppercase tracking-widest">
-                  % de victoria
+                  Win Rate
                 </span>
                 <span className="text-white font-black text-xl tabular-nums">{stats.winRate}%</span>
               </div>
@@ -115,7 +115,7 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
                   {streakLabel}
                 </div>
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">
-                  Racha actual
+                  Current Streak
                 </div>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -123,7 +123,7 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
                   {stats.totalHandsPlayed}
                 </div>
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">
-                  Manos jugadas
+                  Hands Played
                 </div>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 col-span-2">
@@ -131,7 +131,7 @@ export function StatsScreen({ onBack }: StatsScreenProps) {
                   {stats.totalPointsScored}
                 </div>
                 <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mt-1">
-                  Puntos anotados en total
+                  Total Points Scored
                 </div>
               </div>
             </div>
