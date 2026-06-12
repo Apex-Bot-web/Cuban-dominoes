@@ -1,7 +1,9 @@
 import { clsx } from 'clsx';
+import { useState } from 'react';
 import type { Seat } from '@dominoes/engine';
 import { teamOf } from '@dominoes/engine';
 import type { HandResult } from '@dominoes/engine';
+import type { MoveEntry } from '../game/useGame';
 
 // Relative position labels: mySeat is 'Tú', seats going clockwise are Este/Socio/Oeste
 const REL_LABEL = ['Tú', 'Este', 'Socio', 'Oeste'];
@@ -13,9 +15,11 @@ interface ScoreScreenProps {
   handNumber: number;
   mySeat: Seat;
   onNext: () => void;
+  moveLog?: MoveEntry[];
 }
 
-export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySeat, onNext }: ScoreScreenProps) {
+export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySeat, onNext, moveLog }: ScoreScreenProps) {
+  const [showLog, setShowLog] = useState(false);
   const myTeam = teamOf(mySeat);
   const weWon = result.winnerTeam === myTeam;
   const isTie = result.type === 'tranque' && result.tie;
@@ -113,6 +117,42 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
             <div className="text-[10px] font-bold uppercase tracking-wide text-red-400/60">Ellos</div>
           </div>
         </div>
+
+        {/* Hand log (solo mode only — not present in multiplayer) */}
+        {moveLog && moveLog.length > 0 && (
+          <div className="border-t border-white/10">
+            <button
+              onClick={() => setShowLog((s) => !s)}
+              className="w-full text-left flex items-center justify-between px-4 py-2.5 text-white/40 hover:text-white/60 transition-colors"
+            >
+              <span className="text-[11px] font-bold uppercase tracking-widest">
+                Ver jugadas ({moveLog.length})
+              </span>
+              <span className="text-xs">{showLog ? '↑' : '↓'}</span>
+            </button>
+            {showLog && (
+              <div className="max-h-36 overflow-y-auto no-scrollbar px-4 pb-3 flex flex-col gap-1">
+                {moveLog.map((move, i) => {
+                  const relIdx = relSeats.indexOf(move.seat);
+                  const label = REL_LABEL[relIdx] ?? `Asiento ${move.seat}`;
+                  const isMyTeamMove = teamOf(move.seat) === myTeam;
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className={clsx('text-[11px] font-black w-12 shrink-0', isMyTeamMove ? 'text-green-400' : 'text-red-300')}>
+                        {label}
+                      </span>
+                      {move.type === 'play' ? (
+                        <span className="text-white/70 text-[11px] font-mono">{move.tile[0]}•{move.tile[1]}</span>
+                      ) : (
+                        <span className="text-white/30 text-[11px] italic">pasó</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* CTA */}
         <div className="px-4 py-3">

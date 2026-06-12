@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { clsx } from 'clsx';
 import type { Seat } from '@dominoes/engine';
 import type { Socket } from 'socket.io-client';
@@ -37,6 +37,7 @@ export function MultiplayerGameScreen({
     choosingSide,
     playableTiles,
     choosingSalida,
+    salidaCountdown,
     showPegao,
     pass,
     selectTile,
@@ -49,6 +50,27 @@ export function MultiplayerGameScreen({
   const { volume, setVolume } = useBackgroundMusic();
   const { messages: chatMessages, sendEmoji } = useChatMessages(socket);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  // Track live room state for reconnect indicators
+  const [currentRoom, setCurrentRoom] = useState(room);
+  useEffect(() => {
+    function onRoomUpdated(r: typeof room) { setCurrentRoom(r); }
+    socket.on('room:updated', onRoomUpdated);
+    return () => { socket.off('room:updated', onRoomUpdated); };
+  }, [socket]);
+
+  function seatConnected(seat: Seat): boolean {
+    const slot = currentRoom.seats[seat];
+    return !slot || slot.type === 'bot' || slot.connected;
+  }
+
+  // Copy room code
+  const [copied, setCopied] = useState(false);
+  const copyCode = useCallback(() => {
+    void navigator.clipboard.writeText(room.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [room.code]);
 
   // Seat remapping: my seat is always at the bottom
   const mySeat = view.seat;
@@ -94,6 +116,14 @@ export function MultiplayerGameScreen({
         onVolumeChange={setVolume}
       />
 
+      {/* Room code — tap to copy */}
+      <div className="shrink-0 flex items-center justify-center py-1 bg-black/20 border-b border-white/5">
+        <button onClick={copyCode} className="flex items-center gap-1.5 text-white/30 hover:text-white/60 transition-colors">
+          <span className="text-[10px] font-black tracking-widest">{room.code}</span>
+          <span className="text-[10px]">{copied ? '✓' : '⎘'}</span>
+        </button>
+      </div>
+
       {serverError && (
         <div className="shrink-0 bg-red-900/80 text-red-200 text-xs font-bold px-4 py-1 text-center">
           {serverError}
@@ -108,6 +138,7 @@ export function MultiplayerGameScreen({
           passHistory={passHistory}
           position="top"
           displayName={seatName(TOP_SEAT)}
+          connected={seatConnected(TOP_SEAT)}
         />
 
         <div className="flex-1 flex gap-1.5 min-h-0">
@@ -118,6 +149,7 @@ export function MultiplayerGameScreen({
             passHistory={passHistory}
             position="side"
             displayName={seatName(LEFT_SEAT)}
+            connected={seatConnected(LEFT_SEAT)}
           />
 
           <div className="flex-1 table-surface rounded-2xl overflow-hidden flex flex-col">
@@ -136,9 +168,20 @@ export function MultiplayerGameScreen({
             passHistory={passHistory}
             position="side"
             displayName={seatName(RIGHT_SEAT)}
+            connected={seatConnected(RIGHT_SEAT)}
           />
         </div>
       </div>
+
+      {/* Countdown strip — visible for 5 s after tiles are dealt before picker appears */}
+      {choosingSalida && choosingSalida.showPicker === false && salidaCountdown !== null && (
+        <div className="shrink-0 flex items-center justify-center gap-2 py-2 bg-yellow-500/10 border-y border-yellow-500/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
+          <span className="text-yellow-300/90 text-xs font-black tracking-wide">
+            Eligiendo quién sale en {salidaCountdown}…
+          </span>
+        </div>
+      )}
 
       <div className="shrink-0 bg-felt-dark/70 border-t border-white/10">
         <div

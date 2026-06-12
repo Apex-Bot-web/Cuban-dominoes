@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { clsx } from 'clsx';
 import { io } from 'socket.io-client';
-import type { RoomView } from '../types/socket';
+import type { BotLevel, RoomView } from '../types/socket';
 import type { Socket } from 'socket.io-client';
 
 // Dev: connect to the server dev port. Prod: same origin (server also serves the web build).
@@ -21,15 +21,22 @@ function getSavedName(): string {
 }
 
 interface HomeScreenProps {
-  onSolo: () => void;
+  onSolo: (level: BotLevel) => void;
   onMultiplayer: (socket: Socket, room: RoomView) => void;
 }
+
+const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
+  { level: 'facil', emoji: '😌', label: 'Fácil' },
+  { level: 'medio', emoji: '🤔', label: 'Medio' },
+  { level: 'duro',  emoji: '🧠', label: 'Duro'  },
+];
 
 export function HomeScreen({ onSolo, onMultiplayer }: HomeScreenProps) {
   const [displayName, setDisplayName] = useState(getSavedName);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState<'create' | 'join' | null>(null);
+  const [botLevel, setBotLevel] = useState<BotLevel>('medio');
 
   function saveName(name: string) {
     setDisplayName(name);
@@ -124,9 +131,27 @@ export function HomeScreen({ onSolo, onMultiplayer }: HomeScreenProps) {
 
       {/* Buttons */}
       <div className="w-full max-w-xs flex flex-col gap-3">
+        {/* Difficulty pills */}
+        <div className="flex gap-2">
+          {BOT_LEVELS.map(({ level, emoji, label }) => (
+            <button
+              key={level}
+              onClick={() => setBotLevel(level)}
+              className={clsx(
+                'flex-1 flex flex-col items-center gap-0.5 rounded-xl py-2.5 transition-all text-sm font-black',
+                botLevel === level
+                  ? 'bg-felt-light text-white ring-2 ring-white/25'
+                  : 'bg-white/10 text-white/50 hover:bg-white/15',
+              )}
+            >
+              <span className="text-base leading-none">{emoji}</span>
+              <span className="leading-none">{label}</span>
+            </button>
+          ))}
+        </div>
         {/* Solo */}
         <button
-          onClick={onSolo}
+          onClick={() => onSolo(botLevel)}
           className="w-full bg-felt-light hover:bg-felt text-white font-black text-lg rounded-2xl py-4 transition-colors active:scale-95"
         >
           🤖 Solo vs Bots

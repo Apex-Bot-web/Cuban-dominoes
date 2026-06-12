@@ -31,6 +31,7 @@ export interface UseMultiplayerGameReturn {
   choosingSide: boolean;
   playableTiles: Set<string>;
   choosingSalida: ChoosingAboutSalida | null;
+  salidaCountdown: number | null;
   showPegao: boolean;
   pass: () => void;
   selectTile: (tile: Tile) => void;
@@ -48,6 +49,7 @@ export function useMultiplayerGame(
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [choosingSide, setChoosingSide] = useState(false);
   const [choosingSalida, setChoosingSalida] = useState<ChoosingAboutSalida | null>(null);
+  const [salidaCountdown, setSalidaCountdown] = useState<number | null>(null);
   const [showPegao, setShowPegao] = useState(false);
   const prevCountsRef = useRef(initialView.tileCounts);
 
@@ -75,9 +77,11 @@ export function useMultiplayerGame(
       setSelectedTile(null);
       setChoosingSide(false);
       setChoosingSalida(null);
+      setSalidaCountdown(null);
     }
     function onChoosingSalida(payload: ChoosingAboutSalida) {
       setChoosingSalida(payload);
+      setSalidaCountdown(payload.showPicker === false ? 5 : null);
     }
     socket.on('game:state', onGameState);
     socket.on('game:choosing-salida', onChoosingSalida);
@@ -86,6 +90,13 @@ export function useMultiplayerGame(
       socket.off('game:choosing-salida', onChoosingSalida);
     };
   }, [socket]);
+
+  // Tick countdown while tiles are visible but picker is hidden
+  useEffect(() => {
+    if (salidaCountdown === null || salidaCountdown <= 0) return;
+    const t = setTimeout(() => setSalidaCountdown((c) => (c !== null && c > 0 ? c - 1 : null)), 1_000);
+    return () => clearTimeout(t);
+  }, [salidaCountdown]);
 
   const mySeat = view.seat;
 
@@ -153,6 +164,7 @@ export function useMultiplayerGame(
     choosingSide,
     playableTiles,
     choosingSalida,
+    salidaCountdown,
     showPegao,
     pass,
     selectTile,

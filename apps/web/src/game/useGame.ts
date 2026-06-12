@@ -17,6 +17,7 @@ import {
 } from '@dominoes/engine';
 
 export type GamePhase = 'playing' | 'hand-over' | 'choosing-salida' | 'match-over';
+export type MoveEntry = { seat: Seat; type: 'play'; tile: Tile } | { seat: Seat; type: 'pass' };
 
 const HUMAN: Seat = 0;
 
@@ -29,6 +30,7 @@ export interface UseGameReturn {
   botThinking: boolean;
   playableTiles: Set<string>;
   showPegao: boolean;
+  moveLog: MoveEntry[];
   selectTile: (tile: Tile) => void;
   playSide: (side: BoardSide) => void;
   cancelSelection: () => void;
@@ -47,6 +49,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
   const [selectedTile, setSelectedTile] = useState<Tile | null>(null);
   const [choosingSide, setChoosingSide] = useState(false);
   const [botThinking, setBotThinking] = useState(false);
+  const [moveLog, setMoveLog] = useState<MoveEntry[]>([]);
   const salidaTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear the salida timer on unmount
@@ -79,6 +82,11 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
   function applyAndAdvance(m: MatchState, action: Parameters<typeof applyAction>[1]) {
     const result = applyAction(m, action);
     if (!result.ok) return;
+    setMoveLog(prev => {
+      if (action.type === 'play') return [...prev, { seat: action.seat, type: 'play', tile: action.tile }];
+      if (action.type === 'pass') return [...prev, { seat: action.seat, type: 'pass' }];
+      return prev;
+    });
     setMatch(result.match);
     if (result.match.hand.result) {
       setPhase(result.match.winnerTeam !== undefined ? 'match-over' : 'hand-over');
@@ -174,6 +182,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     // Bot team won, or no choice needed — advance immediately
     const result = startNextHand(match);
     if (!result.ok) return;
+    setMoveLog([]);
     setMatch(result.match);
     setPhase('playing');
     setSelectedTile(null);
@@ -182,6 +191,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
 
   const pickSalida = useCallback((seat: Seat) => {
     // Tiles were already dealt in nextHand(); just set who leads.
+    setMoveLog([]);
     setMatch(prev => ({ ...prev, hand: { ...prev.hand, turn: seat, salida: seat } }));
     setPhase('playing');
     setSelectedTile(null);
@@ -190,6 +200,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
 
   const newMatch = useCallback(() => {
     if (salidaTimerRef.current) { clearTimeout(salidaTimerRef.current); salidaTimerRef.current = null; }
+    setMoveLog([]);
     setMatch(createMatch({ chooseSalida: true }));
     setPhase('playing');
     setSelectedTile(null);
@@ -206,6 +217,7 @@ export function useGame(botLevel: BotLevel = 'duro'): UseGameReturn {
     botThinking,
     playableTiles,
     showPegao,
+    moveLog,
     selectTile,
     playSide,
     cancelSelection,

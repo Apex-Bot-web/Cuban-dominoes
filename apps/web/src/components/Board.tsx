@@ -57,6 +57,20 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
     return () => obs.disconnect();
   }, []);
 
+  // Track newest tile for pop animation
+  const prevLengthRef = useRef(board.length);
+  const [newestIdx, setNewestIdx] = useState<number | null>(null);
+  useEffect(() => {
+    if (board.length > prevLengthRef.current) {
+      setNewestIdx(board.length - 1);
+      const t = setTimeout(() => setNewestIdx(null), 300);
+      prevLengthRef.current = board.length;
+      return () => clearTimeout(t);
+    }
+    if (board.length !== prevLengthRef.current) setNewestIdx(null);
+    prevLengthRef.current = board.length;
+  }, [board.length]);
+
   if (board.length === 0) {
     return (
       <div ref={containerRef} className="flex-1 flex items-center justify-center">
@@ -115,16 +129,17 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
               const dbl = isDouble(tile);
 
               return (
-                <DominoTile
-                  key={ti}
-                  tile={tile}
-                  // Doubles stand perpendicular to the chain (portrait in a horizontal chain)
-                  orientation={dbl ? 'v' : 'h'}
-                  // Doubles don't need flipping — both halves are identical
-                  flipped={dbl ? false : row.flipped}
-                  size="md"
-                  state={isExposed ? 'selected' : 'normal'}
-                />
+                <div key={ti} className={globalIdx === newestIdx ? 'animate-tile-pop' : undefined}>
+                  <DominoTile
+                    tile={tile}
+                    // Doubles stand perpendicular to the chain (portrait in a horizontal chain)
+                    orientation={dbl ? 'v' : 'h'}
+                    // Doubles don't need flipping — both halves are identical
+                    flipped={dbl ? false : row.flipped}
+                    size="md"
+                    state={isExposed ? 'selected' : 'normal'}
+                  />
+                </div>
               );
             })}
           </div>

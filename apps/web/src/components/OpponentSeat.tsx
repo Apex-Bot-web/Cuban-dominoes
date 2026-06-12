@@ -17,9 +17,11 @@ interface OpponentSeatProps {
   position: 'top' | 'side';
   /** Override the default seat label with a player's display name */
   displayName?: string;
+  /** false = player disconnected (show red indicator) */
+  connected?: boolean;
 }
 
-export function OpponentSeat({ seat, tileCount, isActive, passHistory, position, displayName }: OpponentSeatProps) {
+export function OpponentSeat({ seat, tileCount, isActive, passHistory, position, displayName, connected = true }: OpponentSeatProps) {
   const name = displayName ?? SEAT_LABEL[seat] ?? `Seat ${seat}`;
   const justPassed = passHistory.length > 0 && passHistory[passHistory.length - 1]?.seat === seat;
 
@@ -38,12 +40,20 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
         <div className="flex items-center gap-1.5 shrink-0">
           {isActive
             ? <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)] animate-pulse" />
+            : !connected
+            ? <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             : <span className="w-2 h-2 rounded-full bg-white/15" />
           }
-          <span className={clsx('text-xs font-black uppercase tracking-wider', isActive ? 'text-white' : 'text-white/50')}>
+          <span className={clsx('text-xs font-black uppercase tracking-wider',
+            isActive ? 'text-white' : !connected ? 'text-red-400/80' : 'text-white/50')}>
             {name}
           </span>
-          {justPassed && (
+          {!connected && (
+            <span className="text-[9px] font-black bg-red-500/20 text-red-400 border border-red-500/30 rounded px-1 py-0.5 leading-none uppercase">
+              Disc.
+            </span>
+          )}
+          {justPassed && connected && (
             <span className="text-[9px] font-black bg-orange-500 text-white rounded px-1 py-0.5 leading-none uppercase">
               Paso
             </span>
@@ -78,23 +88,30 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
           : 'bg-black/20',
       )}
     >
-      {/* Top: active dot */}
+      {/* Top: active / disconnected dot */}
       <div className="h-3 flex items-center justify-center">
-        {isActive && (
-          <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)] animate-pulse" />
-        )}
+        {isActive
+          ? <span className="w-2 h-2 rounded-full bg-green-400 shadow-[0_0_6px_rgba(74,222,128,0.8)] animate-pulse" />
+          : !connected
+          ? <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          : null
+        }
       </div>
 
       {/* Name rotated */}
       <span
-        className={clsx('text-[10px] font-black uppercase tracking-widest my-1', isActive ? 'text-white' : 'text-white/40')}
+        className={clsx('text-[10px] font-black uppercase tracking-widest my-1',
+          isActive ? 'text-white' : !connected ? 'text-red-400/80' : 'text-white/40')}
         style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }}
       >
         {name}
       </span>
 
-      {/* Paso badge */}
-      {justPassed && (
+      {/* Disconnected / Paso badge */}
+      {!connected && (
+        <span className="text-[7px] font-black text-red-400 leading-none uppercase mb-1">DISC</span>
+      )}
+      {justPassed && connected && (
         <span className="text-[8px] font-black bg-orange-500 text-white rounded px-0.5 py-0.5 leading-none uppercase mb-1">
           PASO
         </span>

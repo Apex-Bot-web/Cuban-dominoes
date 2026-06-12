@@ -4,11 +4,11 @@ import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { MultiplayerGameScreen } from './screens/MultiplayerGameScreen';
 import { SoloGameScreen } from './screens/SoloGameScreen';
-import type { PlayerView, RoomView } from './types/socket';
+import type { BotLevel, PlayerView, RoomView } from './types/socket';
 
 type Screen =
   | { tag: 'home' }
-  | { tag: 'solo' }
+  | { tag: 'solo'; botLevel: BotLevel }
   | { tag: 'lobby'; socket: Socket; room: RoomView }
   | { tag: 'mp-game'; socket: Socket; view: PlayerView; room: RoomView };
 
@@ -36,13 +36,13 @@ export default function App() {
     <div className="h-full overflow-hidden">
       {screen.tag === 'home' && (
         <HomeScreen
-          onSolo={() => setScreen({ tag: 'solo' })}
+          onSolo={(level) => setScreen({ tag: 'solo', botLevel: level })}
           onMultiplayer={(socket, room) => setScreen({ tag: 'lobby', socket, room })}
         />
       )}
 
       {screen.tag === 'solo' && (
-        <SoloGameScreen onLeave={() => setScreen({ tag: 'home' })} />
+        <SoloGameScreen botLevel={screen.botLevel} onLeave={() => setScreen({ tag: 'home' })} />
       )}
 
       {screen.tag === 'lobby' && (

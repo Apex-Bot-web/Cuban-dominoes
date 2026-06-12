@@ -1,4 +1,5 @@
-import type { Seat } from '@dominoes/engine';
+import { useState, useEffect } from 'react';
+import type { BotLevel, Seat } from '@dominoes/engine';
 import { partnerOf } from '@dominoes/engine';
 import { Board } from '../components/Board';
 import { MatchOverScreen } from '../components/MatchOverScreen';
@@ -15,10 +16,11 @@ const TOP_SEAT: Seat = 2;
 const RIGHT_SEAT: Seat = 1;
 
 interface SoloGameScreenProps {
+  botLevel: BotLevel;
   onLeave: () => void;
 }
 
-export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
+export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
   const {
     view,
     match,
@@ -28,13 +30,24 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
     botThinking,
     playableTiles,
     showPegao,
+    moveLog,
     selectTile,
     playSide,
     cancelSelection,
     nextHand,
     pickSalida,
     newMatch,
-  } = useGame('duro');
+  } = useGame(botLevel);
+
+  // Countdown for the 5-second "look at tiles" window before the salida picker
+  const isLookingAtTiles = phase === 'hand-over' && !view.result;
+  const [salidaCountdown, setSalidaCountdown] = useState<number | null>(null);
+  useEffect(() => { setSalidaCountdown(isLookingAtTiles ? 5 : null); }, [isLookingAtTiles]);
+  useEffect(() => {
+    if (salidaCountdown === null || salidaCountdown <= 0) return;
+    const t = setTimeout(() => setSalidaCountdown((c) => (c !== null && c > 0 ? c - 1 : null)), 1_000);
+    return () => clearTimeout(t);
+  }, [salidaCountdown]);
 
   const { volume, setVolume } = useBackgroundMusic();
 
@@ -97,6 +110,16 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
         </div>
       </div>
 
+      {/* Countdown strip — shows during the 5-second tile-viewing window */}
+      {isLookingAtTiles && salidaCountdown !== null && (
+        <div className="shrink-0 flex items-center justify-center gap-2 py-2 bg-yellow-500/10 border-t border-yellow-500/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse shrink-0" />
+          <span className="text-yellow-300/90 text-xs font-black tracking-wide">
+            Eligiendo quién sale en {salidaCountdown}…
+          </span>
+        </div>
+      )}
+
       <div className="shrink-0 bg-felt-dark/70 border-t border-white/10">
         <div
           className={
@@ -135,6 +158,7 @@ export function SoloGameScreen({ onLeave }: SoloGameScreenProps) {
           handNumber={handNumber}
           mySeat={HUMAN_SEAT}
           onNext={nextHand}
+          moveLog={moveLog}
         />
       )}
       {phase === 'match-over' && match.winnerTeam !== undefined && (
