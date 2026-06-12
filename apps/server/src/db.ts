@@ -30,6 +30,16 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_matches_player ON matches(player_id);
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS oauth_accounts (
+    provider    TEXT NOT NULL,
+    provider_id TEXT NOT NULL,
+    player_id   TEXT NOT NULL REFERENCES players(player_id),
+    created_at  INTEGER NOT NULL DEFAULT (unixepoch()),
+    PRIMARY KEY (provider, provider_id)
+  )
+`);
+
 // Migration: add friend_code column to existing installs
 try { db.exec(`ALTER TABLE players ADD COLUMN friend_code TEXT`); } catch {}
 db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_players_friend_code ON players(friend_code)`);
@@ -146,6 +156,24 @@ export function getLeaderboard(): LeaderboardEntry[] {
     wins: r.w,
     winRate: r.wr,
   }));
+}
+
+// ── OAuth ─────────────────────────────────────────────────────────────────────
+
+const stmtFindByOAuth = db.prepare(
+  `SELECT player_id FROM oauth_accounts WHERE provider = ? AND provider_id = ?`,
+);
+const stmtLinkOAuth = db.prepare(
+  `INSERT OR IGNORE INTO oauth_accounts (provider, provider_id, player_id) VALUES (?, ?, ?)`,
+);
+
+export function findPlayerByOAuth(provider: string, providerId: string): string | null {
+  const row = stmtFindByOAuth.get(provider, providerId) as { player_id: string } | undefined;
+  return row?.player_id ?? null;
+}
+
+export function linkOAuth(provider: string, providerId: string, playerId: string): void {
+  stmtLinkOAuth.run(provider, providerId, playerId);
 }
 
 // ── Friends ───────────────────────────────────────────────────────────────────

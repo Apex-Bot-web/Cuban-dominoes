@@ -27,15 +27,18 @@ import {
 import type { Action, BotLevel, GameConfig, Room, Seat, Team } from './types.js';
 import {
   addFriend,
+  findPlayerByOAuth,
   getFriends,
   getLeaderboard,
   getMyInfo,
   getPlayerStats,
+  linkOAuth,
   lookupByFriendCode,
   recordMatchResult,
   removeFriend,
   upsertPlayer,
 } from './db.js';
+import { verifyAppleIdToken, verifyGoogleIdToken } from './auth.js';
 import {
   clearBackfillTimer,
   drainQueue,
@@ -92,6 +95,68 @@ app.get('/api/leaderboard', (_req, res) => {
 // Live online count — total connected sockets
 app.get('/api/online', (_req, res) => {
   res.json({ count: io.engine.clientsCount });
+});
+
+// ── OAuth sign-in endpoints ───────────────────────────────────────────────────
+
+// Shared helper: find or create player for an OAuth identity
+function resolveOAuthPlayer(
+  provider: string,
+  providerId: string,
+  oauthName: string | undefined,
+  currentPlayerId: string | undefined,
+): string {
+  // 1. Existing OAuth link → return that player
+  const existing = findPlayerByOAuth(provider, providerId);
+  if (existing) return existing;
+
+  // 2. Caller has an anonymous account → link it to this OAuth identity
+  const playerId = currentPlayerId ?? crypto.randomUUID();
+  const name = (oauthName ?? 'Player').trim().slice(0, 20);
+  upsertPlayer(playerId, name);
+  linkOAuth(provider, providerId, playerId);
+  return playerId;
+}
+
+app.post('/api/auth/google', async (req, res) => {
+  const { idToken, currentPlayerId, displayName } = req.body as {
+    idToken?: string;
+    currentPlayerId?: string;
+    displayName?: string;
+  };
+  const clientId = process.env['GOOGLE_CLIENT_ID'];
+  if (!idToken || !clientId) { res.status(400).json({ error: 'Missing fields or server not configured' }); return; }
+
+  const payload = await verifyGoogleIdToken(idToken, clientId);
+  if (!payload) { res.status(401).json({ error: 'Invalid Google token' }); return; }
+
+  const playerId = resolveOAuthPlayer('google', payload.sub, displayName ?? payload.name, currentPlayerId);
+  lastSeen.set(playerId, Date.now());
+  const info = getMyInfo(playerId);
+  if (!info) { res.status(500).json({ error: 'Failed to load player info' }); return; }
+  res.json({ playerId, displayName: info.displayName, friendCode: info.friendCode });
+});
+
+app.post('/api/auth/apple', async (req, res) => {
+  const { idToken, currentPlayerId, firstName, lastName } = req.body as {
+    idToken?: string;
+    currentPlayerId?: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  const clientId = process.env['APPLE_CLIENT_ID'];
+  if (!idToken || !clientId) { res.status(400).json({ error: 'Missing fields or server not configured' }); return; }
+
+  const payload = await verifyAppleIdToken(idToken, clientId);
+  if (!payload) { res.status(401).json({ error: 'Invalid Apple token' }); return; }
+
+  // Apple only provides name on the FIRST sign-in — use it if given
+  const name = firstName ? `${firstName}${lastName ? ' ' + lastName : ''}`.trim() : undefined;
+  const playerId = resolveOAuthPlayer('apple', payload.sub, name, currentPlayerId);
+  lastSeen.set(playerId, Date.now());
+  const info = getMyInfo(playerId);
+  if (!info) { res.status(500).json({ error: 'Failed to load player info' }); return; }
+  res.json({ playerId, displayName: info.displayName, friendCode: info.friendCode });
 });
 
 // Presence heartbeat — clients call this every 60s while on HomeScreen / FriendsScreen
