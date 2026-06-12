@@ -258,6 +258,7 @@ export function MultiplayerGameScreen({
           choosingSide={choosingSide}
           onSelect={selectTile}
           onCancelSelection={cancelSelection}
+          handNumber={handNumber}
         />
       </div>
 

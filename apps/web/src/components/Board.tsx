@@ -128,17 +128,23 @@ export function Board({ board, openEnds, choosingSide, onPickSide }: BoardProps)
               const isExposed = choosingSide && (isFirstTile || isLastTile);
               const dbl = isDouble(tile);
 
+              const isNewest = globalIdx === newestIdx;
               return (
-                <div key={ti} className={globalIdx === newestIdx ? 'animate-tile-pop' : undefined}>
-                  <DominoTile
-                    tile={tile}
-                    // Doubles stand perpendicular to the chain (portrait in a horizontal chain)
-                    orientation={dbl ? 'v' : 'h'}
-                    // Doubles don't need flipping — both halves are identical
-                    flipped={dbl ? false : row.flipped}
-                    size="md"
-                    state={isExposed ? 'selected' : 'normal'}
-                  />
+                <div key={ti} className="relative">
+                  <div className={isNewest ? (dbl ? 'animate-double-spin' : 'animate-tile-pop') : undefined}>
+                    <DominoTile
+                      tile={tile}
+                      // Doubles stand perpendicular to the chain (portrait in a horizontal chain)
+                      orientation={dbl ? 'v' : 'h'}
+                      // Doubles don't need flipping — both halves are identical
+                      flipped={dbl ? false : row.flipped}
+                      size="md"
+                      state={isExposed ? 'selected' : 'normal'}
+                    />
+                  </div>
+                  {isNewest && (
+                    <div className="absolute inset-0 rounded pointer-events-none border border-white/50 animate-tile-ripple" />
+                  )}
                 </div>
               );
             })}

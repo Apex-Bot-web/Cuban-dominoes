@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import type { Seat, PassRecord } from '@dominoes/engine';
 import { FaceDownTile } from './DominoTile';
@@ -25,6 +26,21 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
   const name = displayName ?? SEAT_LABEL[seat] ?? `Seat ${seat}`;
   const justPassed = passHistory.length > 0 && passHistory[passHistory.length - 1]?.seat === seat;
 
+  // Shake once when this seat passes
+  const [shaking, setShaking] = useState(false);
+  const prevPassedRef = useRef(false);
+  useEffect(() => {
+    if (justPassed && !prevPassedRef.current) {
+      setShaking(true);
+      const t = setTimeout(() => setShaking(false), 420);
+      prevPassedRef.current = true;
+      return () => clearTimeout(t);
+    }
+    if (!justPassed) prevPassedRef.current = false;
+  }, [justPassed]);
+
+  const isPegao = tileCount === 1;
+
   // ── Top (partner, Socio) ─────────────────────────────────────────────────
   if (position === 'top') {
     return (
@@ -34,6 +50,7 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
           isActive
             ? 'bg-white/15 ring-2 ring-white/40 shadow-lg shadow-white/5'
             : 'bg-black/20',
+          shaking && 'animate-shake',
         )}
       >
         {/* Active indicator + name */}
@@ -71,7 +88,10 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
         </div>
 
         {/* Count */}
-        <span className={clsx('text-xs font-black tabular-nums shrink-0', isActive ? 'text-white' : 'text-white/40')}>
+        <span className={clsx(
+          'text-xs font-black tabular-nums shrink-0',
+          isPegao ? 'text-orange-300 animate-pulse' : isActive ? 'text-white' : 'text-white/40',
+        )}>
           {tileCount}
         </span>
       </div>
@@ -86,6 +106,7 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
         isActive
           ? 'bg-white/15 ring-2 ring-white/40 shadow-lg shadow-white/5'
           : 'bg-black/20',
+        shaking && 'animate-shake',
       )}
     >
       {/* Top: active / disconnected dot */}
@@ -118,7 +139,10 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
       )}
 
       {/* Tile count — large and readable */}
-      <span className={clsx('text-2xl font-black tabular-nums leading-none', isActive ? 'text-white' : 'text-white/50')}>
+      <span className={clsx(
+        'text-2xl font-black tabular-nums leading-none',
+        isPegao ? 'text-orange-300 animate-pulse' : isActive ? 'text-white' : 'text-white/50',
+      )}>
         {tileCount}
       </span>
       <span className={clsx('text-[9px] font-mono', isActive ? 'text-white/60' : 'text-white/25')}>fic.</span>

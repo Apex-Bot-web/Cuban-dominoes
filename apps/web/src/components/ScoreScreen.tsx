@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Seat } from '@dominoes/engine';
 import { teamOf } from '@dominoes/engine';
 import type { HandResult } from '@dominoes/engine';
@@ -7,6 +7,25 @@ import type { MoveEntry } from '../game/useGame';
 
 // Relative position labels: mySeat is 'Tú', seats going clockwise are Este/Socio/Oeste
 const REL_LABEL = ['Tú', 'Este', 'Socio', 'Oeste'];
+
+function AnimatedNumber({ value, duration = 550 }: { value: number; duration?: number }) {
+  const [current, setCurrent] = useState(0);
+  useEffect(() => {
+    let rafId: number;
+    let startTime: number | null = null;
+    function tick(now: number) {
+      if (startTime === null) startTime = now;
+      const t = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - (1 - t) ** 3;
+      setCurrent(Math.round(value * eased));
+      if (t < 1) rafId = requestAnimationFrame(tick);
+      else setCurrent(value);
+    }
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [value, duration]);
+  return <>{current}</>;
+}
 
 interface ScoreScreenProps {
   result: HandResult;
@@ -59,7 +78,9 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
           </div>
           {!isTie && (
             <div className="flex items-baseline justify-center gap-1 mt-1">
-              <span className="text-5xl font-black text-white tabular-nums">{result.points}</span>
+              <span className="text-5xl font-black text-white tabular-nums">
+                <AnimatedNumber value={result.points} />
+              </span>
               <span className="text-white/50 text-lg font-bold">pts</span>
             </div>
           )}
@@ -81,7 +102,7 @@ export function ScoreScreen({ result, teamScores, targetScore, handNumber, mySea
                   {REL_LABEL[offset]}
                 </span>
                 <span className="text-white text-xl font-black tabular-nums">
-                  {result.pipsBySeat[seat]}
+                  <AnimatedNumber value={result.pipsBySeat[seat] ?? 0} duration={480} />
                 </span>
                 <span className="text-white/30 text-[9px]">pips</span>
               </div>

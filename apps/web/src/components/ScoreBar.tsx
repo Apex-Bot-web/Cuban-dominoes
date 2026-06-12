@@ -48,14 +48,14 @@ export function ScoreBar({
       <div className="flex-1 flex flex-col gap-1">
         <div className="relative h-2.5 bg-white/10 rounded-full overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-emerald-400 rounded-full transition-all duration-700"
-            style={{ width: `${pct0}%` }}
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-500 to-emerald-400 rounded-full"
+            style={{ width: `${pct0}%`, transition: 'width 0.65s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           />
         </div>
         <div className="relative h-2.5 bg-white/10 rounded-full overflow-hidden">
           <div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-600 to-rose-400 rounded-full transition-all duration-700"
-            style={{ width: `${pct1}%` }}
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-600 to-rose-400 rounded-full"
+            style={{ width: `${pct1}%`, transition: 'width 0.65s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
           />
         </div>
         <div className="flex justify-between text-white/20 text-[9px] font-mono -mt-0.5">

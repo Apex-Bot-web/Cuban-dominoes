@@ -147,6 +147,7 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
           choosingSide={choosingSide}
           onSelect={selectTile}
           onCancelSelection={cancelSelection}
+          handNumber={handNumber}
         />
       </div>
 

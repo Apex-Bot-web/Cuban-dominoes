@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { clsx } from 'clsx';
 import type { Tile } from '@dominoes/engine';
 import { sameTile } from '@dominoes/engine';
@@ -15,6 +16,8 @@ interface PlayerHandProps {
   choosingSide: boolean;
   onSelect: (tile: Tile) => void;
   onCancelSelection: () => void;
+  /** When this changes, tiles slide in with a stagger animation */
+  handNumber?: number;
 }
 
 export function PlayerHand({
@@ -25,8 +28,23 @@ export function PlayerHand({
   choosingSide,
   onSelect,
   onCancelSelection,
+  handNumber,
 }: PlayerHandProps) {
   const hasPlayable = playableTiles.size > 0;
+
+  // Deal stagger: animate tiles in when a new hand is dealt
+  const [isDealing, setIsDealing] = useState(false);
+  const prevHandNumberRef = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (handNumber === undefined) return;
+    const prev = prevHandNumberRef.current;
+    prevHandNumberRef.current = handNumber;
+    if (prev !== handNumber) {
+      setIsDealing(true);
+      const t = setTimeout(() => setIsDealing(false), tiles.length * 50 + 380);
+      return () => clearTimeout(t);
+    }
+  }, [handNumber, tiles.length]);
 
   return (
     <div
@@ -68,8 +86,11 @@ export function PlayerHand({
           return (
             <div
               key={i}
-              className="transition-transform duration-150"
-              style={{ transform: isPlayable && !isSelected ? 'translateY(-4px)' : undefined }}
+              className={clsx('transition-transform duration-150', isDealing && 'animate-tile-deal')}
+              style={{
+                transform: isSelected ? 'translateY(-10px)' : isPlayable ? 'translateY(-6px)' : undefined,
+                animationDelay: isDealing ? `${i * 50}ms` : undefined,
+              }}
             >
               <DominoTile
                 tile={tile}

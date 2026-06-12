@@ -39,6 +39,37 @@ html, body, #root {
   animation: tile-pop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Double placed — spin into portrait position */
+@keyframes double-spin {
+  from { transform: rotate(-90deg) scale(0.5); opacity: 0; }
+  to   { transform: rotate(0deg)   scale(1);   opacity: 1; }
+}
+.animate-double-spin { animation: double-spin 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Ripple ring expanding outward after tile lands */
+@keyframes tile-ripple {
+  from { transform: scale(1);   opacity: 0.55; }
+  to   { transform: scale(2.4); opacity: 0;    }
+}
+.animate-tile-ripple { animation: tile-ripple 0.5s ease-out forwards; }
+
+/* Pass shake — seat indicator wobbles when a player passes */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  40%       { transform: translateX(5px); }
+  60%       { transform: translateX(-3px); }
+  80%       { transform: translateX(3px); }
+}
+.animate-shake { animation: shake 0.38s ease-in-out; }
+
+/* Deal stagger — tile slides in from the left when a new hand is dealt */
+@keyframes tile-deal {
+  from { transform: translateX(-24px) scale(0.9); opacity: 0; }
+  to   { transform: translateX(0)      scale(1);   opacity: 1; }
+}
+.animate-tile-deal { animation: tile-deal 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 /* Table playing surface — distinct from the surrounding felt */
 .table-surface {
   background: radial-gradient(ellipse at 50% 40%, #3d8598 0%, #1e4f62 100%);
