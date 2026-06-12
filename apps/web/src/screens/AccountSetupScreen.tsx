@@ -2,9 +2,11 @@ import { useState } from 'react';
 
 interface AccountSetupScreenProps {
   onDone: (displayName: string) => void;
+  onPrivacy?: () => void;
+  onTerms?: () => void;
 }
 
-export function AccountSetupScreen({ onDone }: AccountSetupScreenProps) {
+export function AccountSetupScreen({ onDone, onPrivacy, onTerms }: AccountSetupScreenProps) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
 
@@ -52,6 +54,17 @@ export function AccountSetupScreen({ onDone }: AccountSetupScreenProps) {
 
       <p className="text-white/20 text-xs text-center max-w-xs">
         Your progress is saved on this device. No password needed.
+      </p>
+
+      <p className="text-white/20 text-[11px] text-center max-w-xs leading-relaxed">
+        By continuing you agree to our{' '}
+        <button onClick={onTerms} className="underline underline-offset-2 active:text-white/50">
+          Terms of Service
+        </button>
+        {' '}and{' '}
+        <button onClick={onPrivacy} className="underline underline-offset-2 active:text-white/50">
+          Privacy Policy
+        </button>
       </p>
     </div>
   );

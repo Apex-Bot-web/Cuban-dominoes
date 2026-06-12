@@ -30,6 +30,8 @@ interface HomeScreenProps {
   onLeaderboard: () => void;
   onEditAccount: () => void;
   onFriends: () => void;
+  onPrivacy: () => void;
+  onTerms: () => void;
 }
 
 const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
@@ -38,7 +40,7 @@ const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
   { level: 'duro',  emoji: '🧠', label: 'Hard'  },
 ];
 
-export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLeaderboard, onEditAccount, onFriends }: HomeScreenProps) {
+export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLeaderboard, onEditAccount, onFriends, onPrivacy, onTerms }: HomeScreenProps) {
   const [displayName] = useState(getSavedName);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
@@ -312,6 +314,23 @@ export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats, onLe
             {loading === 'join' ? '…' : 'Join'}
           </button>
         </div>
+      </div>
+
+      {/* Legal footer */}
+      <div className="flex items-center justify-center gap-4 pb-safe pb-4">
+        <button
+          onClick={onPrivacy}
+          className="text-white/25 active:text-white/60 text-xs font-bold transition-colors"
+        >
+          Privacy Policy
+        </button>
+        <span className="text-white/15 text-xs">·</span>
+        <button
+          onClick={onTerms}
+          className="text-white/25 active:text-white/60 text-xs font-bold transition-colors"
+        >
+          Terms of Service
+        </button>
       </div>
     </div>
   );

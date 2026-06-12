@@ -4,6 +4,8 @@ import { AccountSetupScreen } from './screens/AccountSetupScreen';
 import { FriendsScreen } from './screens/FriendsScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { LeaderboardScreen } from './screens/LeaderboardScreen';
+import { PrivacyPolicyScreen } from './screens/PrivacyPolicyScreen';
+import { TermsScreen } from './screens/TermsScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
 import { MatchmakingScreen } from './screens/MatchmakingScreen';
 import { MultiplayerGameScreen } from './screens/MultiplayerGameScreen';
@@ -24,7 +26,9 @@ type Screen =
   | { tag: 'mp-game'; socket: Socket; view: PlayerView; room: RoomView }
   | { tag: 'stats' }
   | { tag: 'leaderboard' }
-  | { tag: 'friends' };
+  | { tag: 'friends' }
+  | { tag: 'privacy' }
+  | { tag: 'terms' };
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>(() =>
@@ -51,7 +55,11 @@ export default function App() {
   return (
     <div className="h-full overflow-hidden">
       {screen.tag === 'account-setup' && (
-        <AccountSetupScreen onDone={() => setScreen({ tag: 'home' })} />
+        <AccountSetupScreen
+          onDone={() => setScreen({ tag: 'home' })}
+          onPrivacy={() => setScreen({ tag: 'privacy' })}
+          onTerms={() => setScreen({ tag: 'terms' })}
+        />
       )}
 
       {screen.tag === 'home' && (
@@ -65,6 +73,8 @@ export default function App() {
           onLeaderboard={() => setScreen({ tag: 'leaderboard' })}
           onFriends={() => setScreen({ tag: 'friends' })}
           onEditAccount={() => setScreen({ tag: 'account-setup' })}
+          onPrivacy={() => setScreen({ tag: 'privacy' })}
+          onTerms={() => setScreen({ tag: 'terms' })}
         />
       )}
 
@@ -75,6 +85,8 @@ export default function App() {
       {screen.tag === 'stats' && <StatsScreen onBack={() => setScreen({ tag: 'home' })} />}
       {screen.tag === 'leaderboard' && <LeaderboardScreen onBack={() => setScreen({ tag: 'home' })} />}
       {screen.tag === 'friends' && <FriendsScreen onBack={() => setScreen({ tag: 'home' })} />}
+      {screen.tag === 'privacy' && <PrivacyPolicyScreen onBack={() => setScreen({ tag: 'home' })} />}
+      {screen.tag === 'terms' && <TermsScreen onBack={() => setScreen({ tag: 'home' })} />}
 
       {screen.tag === 'matchmaking' && (
         <MatchmakingScreen
