@@ -103,9 +103,12 @@ app.post('/api/heartbeat/:playerId', (req, res) => {
 });
 
 // My own info (display name + friend code)
+// Pass ?name=DisplayName to auto-register players who've only played solo
 app.get('/api/me/:playerId', (req, res) => {
   const pid = req.params['playerId'];
+  const displayName = (req.query['name'] as string | undefined)?.trim().slice(0, 20);
   if (!pid) { res.status(400).json({ error: 'Missing playerId' }); return; }
+  if (displayName) upsertPlayer(pid, displayName);
   const info = getMyInfo(pid);
   if (!info) { res.status(404).json({ error: 'Player not found' }); return; }
   lastSeen.set(pid, Date.now());

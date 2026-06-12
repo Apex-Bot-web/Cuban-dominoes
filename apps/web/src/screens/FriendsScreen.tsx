@@ -28,9 +28,11 @@ export function FriendsScreen({ onBack }: FriendsScreenProps) {
 
   useEffect(() => {
     if (!playerId) { setLoading(false); return; }
+    const savedName = (localStorage.getItem('dominoes-display-name') ?? '').trim();
 
-    // Register presence
-    void fetch(`${SERVER_URL}/api/me/${encodeURIComponent(playerId)}`)
+    // Register presence (pass display name so solo-only players get auto-registered)
+    const nameParam = savedName ? `?name=${encodeURIComponent(savedName)}` : '';
+    void fetch(`${SERVER_URL}/api/me/${encodeURIComponent(playerId)}${nameParam}`)
       .then((r) => r.json() as Promise<{ displayName: string; friendCode: string }>)
       .then((d) => { setMyCode(d.friendCode); setMyName(d.displayName); })
       .catch(() => {});
