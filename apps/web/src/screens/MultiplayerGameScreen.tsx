@@ -201,7 +201,7 @@ export function MultiplayerGameScreen({
       <div className="shrink-0 bg-felt-dark/70 border-t border-white/10">
         <div
           className={clsx(
-            'flex items-center px-3 py-1 gap-2',
+            'flex items-center px-3 py-1.5 gap-2 min-h-[44px]',
             isMyTurn && 'bg-white/5',
           )}
         >
@@ -223,12 +223,12 @@ export function MultiplayerGameScreen({
             </span>
           </div>
 
-          {/* Right: Pasar + chat button */}
+          {/* Right: Pass + chat button */}
           <div className="flex items-center gap-2 shrink-0">
             {isMyTurn && playableTiles.size === 0 && (
               <button
                 onClick={pass}
-                className="bg-orange-500 hover:bg-orange-400 text-white text-[11px] font-black uppercase tracking-widest rounded-lg px-3 py-1 transition-colors active:scale-95"
+                className="bg-orange-500 active:bg-orange-600 text-white text-xs font-black uppercase tracking-widest rounded-xl px-4 py-2.5 transition-colors active:scale-95"
               >
                 Pass →
               </button>
@@ -237,10 +237,9 @@ export function MultiplayerGameScreen({
             <button
               onClick={() => setShowChat((s) => !s)}
               className={clsx(
-                'w-8 h-8 flex items-center justify-center rounded-full text-base transition-colors active:scale-90',
-                showChat ? 'bg-felt-light text-white' : 'bg-white/5 hover:bg-white/10',
+                'w-11 h-11 flex items-center justify-center rounded-xl text-xl transition-colors active:scale-90',
+                showChat ? 'bg-felt-light text-white' : 'bg-white/5 active:bg-white/15',
               )}
-              title="Chat"
             >
               💬
             </button>

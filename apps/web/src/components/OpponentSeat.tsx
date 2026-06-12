@@ -4,9 +4,9 @@ import type { Seat, PassRecord } from '@dominoes/engine';
 import { FaceDownTile } from './DominoTile';
 
 const SEAT_LABEL: Record<number, string> = {
-  1: 'Este',
-  2: 'Socio',
-  3: 'Oeste',
+  1: 'Right',
+  2: 'Partner',
+  3: 'Left',
 };
 
 interface OpponentSeatProps {
@@ -41,12 +41,12 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
 
   const isPegao = tileCount === 1;
 
-  // ── Top (partner, Socio) ─────────────────────────────────────────────────
+  // ── Top (partner) ─────────────────────────────────────────────────────────
   if (position === 'top') {
     return (
       <div
         className={clsx(
-          'flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all duration-200 w-full',
+          'flex items-center gap-2 px-3 py-2 rounded-xl transition-all duration-200 w-full',
           isActive
             ? 'bg-white/15 ring-2 ring-white/40 shadow-lg shadow-white/5'
             : 'bg-black/20',
@@ -67,12 +67,12 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
           </span>
           {!connected && (
             <span className="text-[9px] font-black bg-red-500/20 text-red-400 border border-red-500/30 rounded px-1 py-0.5 leading-none uppercase">
-              Disc.
+              Off
             </span>
           )}
           {justPassed && connected && (
             <span className="text-[9px] font-black bg-orange-500 text-white rounded px-1 py-0.5 leading-none uppercase">
-              Paso
+              Pass
             </span>
           )}
         </div>
@@ -98,7 +98,7 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
     );
   }
 
-  // ── Side (Oeste / Este) ───────────────────────────────────────────────────
+  // ── Side (Left / Right) ───────────────────────────────────────────────────
   return (
     <div
       className={clsx(
@@ -128,24 +128,24 @@ export function OpponentSeat({ seat, tileCount, isActive, passHistory, position,
         {name}
       </span>
 
-      {/* Disconnected / Paso badge */}
+      {/* Disconnected / Pass badge */}
       {!connected && (
-        <span className="text-[7px] font-black text-red-400 leading-none uppercase mb-1">DISC</span>
+        <span className="text-[7px] font-black text-red-400 leading-none uppercase mb-1">OFF</span>
       )}
       {justPassed && connected && (
         <span className="text-[8px] font-black bg-orange-500 text-white rounded px-0.5 py-0.5 leading-none uppercase mb-1">
-          PASO
+          PASS
         </span>
       )}
 
-      {/* Tile count — large and readable */}
+      {/* Tile count */}
       <span className={clsx(
         'text-2xl font-black tabular-nums leading-none',
         isPegao ? 'text-orange-300 animate-pulse' : isActive ? 'text-white' : 'text-white/50',
       )}>
         {tileCount}
       </span>
-      <span className={clsx('text-[9px] font-mono', isActive ? 'text-white/60' : 'text-white/25')}>fic.</span>
+      <span className={clsx('text-[9px] font-mono', isActive ? 'text-white/60' : 'text-white/25')}>tiles</span>
     </div>
   );
 }

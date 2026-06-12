@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { clsx } from 'clsx';
 import type { BotLevel, Seat } from '@dominoes/engine';
 import { partnerOf } from '@dominoes/engine';
 import { Board } from '../components/Board';
@@ -122,11 +123,10 @@ export function SoloGameScreen({ botLevel, onLeave }: SoloGameScreenProps) {
 
       <div className="shrink-0 bg-felt-dark/70 border-t border-white/10">
         <div
-          className={
-            isMyTurn
-              ? 'flex items-center justify-center gap-1.5 py-1 bg-white/5'
-              : 'flex items-center justify-center gap-1.5 py-1'
-          }
+          className={clsx(
+            'flex items-center justify-center gap-1.5 min-h-[36px] py-1',
+            isMyTurn && 'bg-white/5',
+          )}
         >
           {isMyTurn && (
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shadow-[0_0_6px_rgba(74,222,128,0.8)]" />
