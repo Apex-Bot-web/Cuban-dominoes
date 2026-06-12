@@ -342,6 +342,34 @@ export function confirmSalidaInHand(
   return { ok: true, room };
 }
 
+// ── Stats helpers ─────────────────────────────────────────────────────────────
+
+export function getMatchSummary(code: string): {
+  teamScores: [number, number];
+  handNumber: number;
+  winnerTeam: Team;
+} | null {
+  const room = rooms.get(code);
+  if (!room?.match || room.match.winnerTeam === undefined) return null;
+  const view = playerView(room.match, 0 as Seat);
+  return {
+    teamScores: [view.teamScores[0]!, view.teamScores[1]!],
+    handNumber: view.handNumber,
+    winnerTeam: room.match.winnerTeam,
+  };
+}
+
+export function getHumanPlayers(code: string): { playerId: string; seat: Seat }[] {
+  const room = rooms.get(code);
+  if (!room) return [];
+  const result: { playerId: string; seat: Seat }[] = [];
+  for (let i = 0; i < 4; i++) {
+    const slot = room.slots[i as Seat];
+    if (slot?.type === 'human') result.push({ playerId: slot.playerId, seat: i as Seat });
+  }
+  return result;
+}
+
 // ── Connection events ─────────────────────────────────────────────────────────
 
 export function disconnectSocket(socketId: string): { code: string; seat: Seat } | null {

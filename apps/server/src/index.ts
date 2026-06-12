@@ -14,6 +14,8 @@ import {
   disconnectSocket,
   enterChoosingState,
   getGameViews,
+  getHumanPlayers,
+  getMatchSummary,
   getRoom,
   getRoomView,
   getSocketInfo,
@@ -23,6 +25,17 @@ import {
   startGame,
 } from './store.js';
 import type { Action, BotLevel, GameConfig, Room, Seat, Team } from './types.js';
+import { getPlayerStats, recordMatchResult, upsertPlayer } from './db.js';
+import {
+  clearBackfillTimer,
+  drainQueue,
+  getQueue,
+  joinQueue,
+  leaveQueueBySocket,
+  startBackfillTimer,
+  tryFormMatch,
+} from './queue.js';
+import type { QueueEntry } from './queue.js';
 
 // ── Express + Socket.IO setup ─────────────────────────────────────────────────
 
@@ -46,7 +59,16 @@ if (!IS_PROD) app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 // Health — before static middleware so it always responds
-app.get('/health', (_req, res) => res.json({ ok: true, ts: Date.now() }));
+app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Player stats (anonymous accounts — keyed by client-generated playerId)
+app.get('/api/stats/:playerId', (req, res) => {
+  const pid = req.params['playerId'];
+  if (!pid) { res.status(400).json({ error: 'Missing playerId' }); return; }
+  const stats = getPlayerStats(pid);
+  if (!stats) { res.status(404).json({ error: 'Player not found' }); return; }
+  res.json(stats);
+});
 
 // Serve built web app in production
 if (IS_PROD) {
@@ -119,6 +141,19 @@ function handleActionResult(
 
   if (matchOver) {
     clearTimer(code);
+    const summary = getMatchSummary(code);
+    if (summary) {
+      for (const { playerId: pid, seat } of getHumanPlayers(code)) {
+        const t = (seat % 2) as 0 | 1;
+        recordMatchResult(
+          pid,
+          t === summary.winnerTeam,
+          summary.teamScores[t] ?? 0,
+          summary.teamScores[(1 - t) as 0 | 1] ?? 0,
+          summary.handNumber,
+        );
+      }
+    }
     return;
   }
 
@@ -221,6 +256,54 @@ function doAdvanceHand(code: string, salida?: Seat): void {
   scheduleNextTurn(code);
 }
 
+// ── Matchmaking ───────────────────────────────────────────────────────────────
+
+const BOT_BACKFILL_LEVEL: BotLevel = 'medio';
+
+function broadcastQueueUpdate(): void {
+  const q = getQueue();
+  q.forEach((e, i) => {
+    io.to(e.socketId).emit('queue:update', { size: q.length, position: i + 1 });
+  });
+}
+
+function launchMatchedGame(entries: QueueEntry[]): void {
+  if (entries.length === 0) return;
+  const first = entries[0]!;
+  const { room } = createRoom(first.playerId, first.socketId, first.displayName);
+  io.sockets.sockets.get(first.socketId)?.join(room.code);
+
+  for (let i = 1; i < entries.length; i++) {
+    const e = entries[i]!;
+    const r = joinRoom(room.code, e.playerId, e.socketId, e.displayName);
+    if (r.ok) io.sockets.sockets.get(e.socketId)?.join(room.code);
+  }
+
+  for (let s = 0; s < 4; s++) {
+    const r = getRoom(room.code);
+    if (r && !r.slots[s as Seat]) setBot(room.code, first.playerId, s as Seat, BOT_BACKFILL_LEVEL);
+  }
+
+  const startResult = startGame(room.code, first.playerId);
+  if (!startResult.ok) { console.error('[queue] start failed:', startResult.error); return; }
+
+  const views = getGameViews(startResult.room);
+  for (const e of entries) {
+    const slotIdx = startResult.room.slots.findIndex(
+      (s) => s?.type === 'human' && s.playerId === e.playerId,
+    );
+    const view = views[slotIdx];
+    if (view) {
+      io.to(e.socketId).emit('queue:matched', {
+        view,
+        room: getRoomView(startResult.room, e.playerId),
+      });
+    }
+  }
+
+  scheduleNextTurn(room.code);
+}
+
 // ── Socket.IO connection handler ──────────────────────────────────────────────
 
 io.on('connection', (socket) => {
@@ -234,6 +317,7 @@ io.on('connection', (socket) => {
   socket.on(
     'room:create',
     ({ displayName, config }: { displayName: string; config?: Partial<GameConfig> }) => {
+      upsertPlayer(playerId, displayName.trim().slice(0, 20));
       const { room } = createRoom(playerId, socket.id, displayName, config);
       socket.join(room.code);
       socket.emit('room:updated', getRoomView(room, playerId));
@@ -244,6 +328,7 @@ io.on('connection', (socket) => {
   socket.on(
     'room:join',
     ({ code, displayName }: { code: string; displayName: string }) => {
+      upsertPlayer(playerId, displayName.trim().slice(0, 20));
       const result = joinRoom(code, playerId, socket.id, displayName);
       if (!result.ok) {
         socket.emit('error', { message: result.error });
@@ -381,6 +466,34 @@ io.on('connection', (socket) => {
     doAdvanceHand(info.code);
   });
 
+  // ── queue:join ────────────────────────────────────────────────────────────────
+  socket.on('queue:join', ({ displayName }: { displayName: string }) => {
+    if (!displayName?.trim()) return;
+    const name = String(displayName).trim().slice(0, 20);
+    upsertPlayer(playerId, name);
+    joinQueue({ socketId: socket.id, playerId, displayName: name });
+    broadcastQueueUpdate();
+    const matched = tryFormMatch();
+    if (matched) {
+      clearBackfillTimer();
+      broadcastQueueUpdate();
+      launchMatchedGame(matched);
+    } else {
+      startBackfillTimer(() => {
+        const entries = drainQueue();
+        if (entries.length > 0) launchMatchedGame(entries);
+      });
+    }
+  });
+
+  // ── queue:leave ───────────────────────────────────────────────────────────────
+  socket.on('queue:leave', () => {
+    leaveQueueBySocket(socket.id);
+    const q = getQueue();
+    if (q.length === 0) clearBackfillTimer();
+    else broadcastQueueUpdate();
+  });
+
   // ── chat:send ────────────────────────────────────────────────────────────────
   socket.on('chat:send', ({ emoji, text }: { emoji?: string; text?: string }) => {
     const info = getSocketInfo(socket.id);
@@ -404,6 +517,10 @@ io.on('connection', (socket) => {
 
   // ── disconnect ───────────────────────────────────────────────────────────────
   socket.on('disconnect', () => {
+    leaveQueueBySocket(socket.id);
+    if (getQueue().length === 0) clearBackfillTimer();
+    else broadcastQueueUpdate();
+
     const info = disconnectSocket(socket.id);
     if (!info) return;
     const room = getRoom(info.code);

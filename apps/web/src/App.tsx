@@ -2,15 +2,19 @@ import { useEffect, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { HomeScreen } from './screens/HomeScreen';
 import { LobbyScreen } from './screens/LobbyScreen';
+import { MatchmakingScreen } from './screens/MatchmakingScreen';
 import { MultiplayerGameScreen } from './screens/MultiplayerGameScreen';
 import { SoloGameScreen } from './screens/SoloGameScreen';
+import { StatsScreen } from './screens/StatsScreen';
 import type { BotLevel, PlayerView, RoomView } from './types/socket';
 
 type Screen =
   | { tag: 'home' }
   | { tag: 'solo'; botLevel: BotLevel }
   | { tag: 'lobby'; socket: Socket; room: RoomView }
-  | { tag: 'mp-game'; socket: Socket; view: PlayerView; room: RoomView };
+  | { tag: 'matchmaking'; socket: Socket; displayName: string }
+  | { tag: 'mp-game'; socket: Socket; view: PlayerView; room: RoomView }
+  | { tag: 'stats' };
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ tag: 'home' });
@@ -38,11 +42,28 @@ export default function App() {
         <HomeScreen
           onSolo={(level) => setScreen({ tag: 'solo', botLevel: level })}
           onMultiplayer={(socket, room) => setScreen({ tag: 'lobby', socket, room })}
+          onMatchmaking={(socket, displayName) =>
+            setScreen({ tag: 'matchmaking', socket, displayName })
+          }
+          onStats={() => setScreen({ tag: 'stats' })}
         />
       )}
 
       {screen.tag === 'solo' && (
         <SoloGameScreen botLevel={screen.botLevel} onLeave={() => setScreen({ tag: 'home' })} />
+      )}
+
+      {screen.tag === 'stats' && <StatsScreen onBack={() => setScreen({ tag: 'home' })} />}
+
+      {screen.tag === 'matchmaking' && (
+        <MatchmakingScreen
+          socket={screen.socket}
+          displayName={screen.displayName}
+          onMatched={(view, room) =>
+            setScreen({ tag: 'mp-game', socket: screen.socket, view, room })
+          }
+          onCancel={() => setScreen({ tag: 'home' })}
+        />
       )}
 
       {screen.tag === 'lobby' && (

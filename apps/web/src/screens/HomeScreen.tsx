@@ -23,6 +23,8 @@ function getSavedName(): string {
 interface HomeScreenProps {
   onSolo: (level: BotLevel) => void;
   onMultiplayer: (socket: Socket, room: RoomView) => void;
+  onMatchmaking: (socket: Socket, displayName: string) => void;
+  onStats: () => void;
 }
 
 const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
@@ -31,11 +33,11 @@ const BOT_LEVELS: { level: BotLevel; emoji: string; label: string }[] = [
   { level: 'duro',  emoji: '🧠', label: 'Duro'  },
 ];
 
-export function HomeScreen({ onSolo, onMultiplayer }: HomeScreenProps) {
+export function HomeScreen({ onSolo, onMultiplayer, onMatchmaking, onStats }: HomeScreenProps) {
   const [displayName, setDisplayName] = useState(getSavedName);
   const [joinCode, setJoinCode] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState<'create' | 'join' | null>(null);
+  const [loading, setLoading] = useState<'create' | 'join' | 'queue' | null>(null);
   const [botLevel, setBotLevel] = useState<BotLevel>('medio');
 
   function saveName(name: string) {
@@ -75,6 +77,18 @@ export function HomeScreen({ onSolo, onMultiplayer }: HomeScreenProps) {
         setLoading(null);
         socket.disconnect();
       });
+    });
+  }
+
+  function handleFindMatch() {
+    const name = displayName.trim();
+    if (!name) { setError('Escribe tu nombre primero'); return; }
+    setError('');
+    setLoading('queue');
+
+    connect((socket) => {
+      setLoading(null);
+      onMatchmaking(socket, name);
     });
   }
 
@@ -155,6 +169,28 @@ export function HomeScreen({ onSolo, onMultiplayer }: HomeScreenProps) {
           className="w-full bg-felt-light hover:bg-felt text-white font-black text-lg rounded-2xl py-4 transition-colors active:scale-95"
         >
           🤖 Solo vs Bots
+        </button>
+
+        {/* Matchmaking */}
+        <button
+          onClick={handleFindMatch}
+          disabled={loading !== null}
+          className={clsx(
+            'w-full font-black text-lg rounded-2xl py-4 transition-colors active:scale-95',
+            loading === 'queue'
+              ? 'bg-purple-700 text-white/60 cursor-not-allowed'
+              : 'bg-purple-600 hover:bg-purple-500 text-white',
+          )}
+        >
+          {loading === 'queue' ? 'Conectando…' : '🌐 Jugar ahora'}
+        </button>
+
+        {/* Stats */}
+        <button
+          onClick={onStats}
+          className="w-full bg-white/10 hover:bg-white/15 text-white/60 hover:text-white font-bold text-base rounded-2xl py-3 transition-colors active:scale-95"
+        >
+          📊 Ver mis estadísticas
         </button>
 
         <div className="flex items-center gap-3">

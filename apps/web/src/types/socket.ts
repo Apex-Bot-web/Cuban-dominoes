@@ -33,3 +33,19 @@ export interface RoomView {
   config: GameConfig;
   status: 'waiting' | 'playing' | 'finished';
 }
+
+export interface QueueUpdate {
+  size: number;
+  position: number;
+}
+
+export interface PlayerStatsView {
+  displayName: string;
+  matchesPlayed: number;
+  wins: number;
+  losses: number;
+  winRate: number;
+  totalPointsScored: number;
+  totalHandsPlayed: number;
+  currentStreak: number;
+}
