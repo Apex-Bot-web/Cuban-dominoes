@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { getMasterGain, getRunningContext, unlockAudio } from '../audio/context';
 
 type SoundName = 'tileSelect' | 'tilePlace' | 'pass' | 'deal' | 'win' | 'lose';
 
@@ -18,25 +18,21 @@ function scheduleEnvelope(
 }
 
 export function useSoundEffects() {
-  const ctxRef = useRef<AudioContext | null>(null);
-  const mutedRef = useRef(false);
-
-  function ctx(): AudioContext {
-    if (!ctxRef.current) ctxRef.current = new AudioContext();
-    if (ctxRef.current.state === 'suspended') void ctxRef.current.resume();
-    return ctxRef.current;
-  }
-
   function play(name: SoundName) {
-    if (mutedRef.current) return;
+    // Unlock on every play call — if triggered by a direct touch this satisfies iOS;
+    // if triggered by a state-change effect it's a safe no-op once already running.
+    unlockAudio();
+    const c = getRunningContext();
+    if (!c) return;
+    // All oscillators connect to the master gain so the volume slider applies.
+    const dest = getMasterGain();
+
     try {
-      const c = ctx();
       switch (name) {
         case 'tileSelect': {
-          // Short soft tick: high sine, quick decay
           const osc = c.createOscillator();
           const g = c.createGain();
-          osc.connect(g); g.connect(c.destination);
+          osc.connect(g); g.connect(dest);
           osc.type = 'sine';
           osc.frequency.setValueAtTime(1100, c.currentTime);
           osc.frequency.exponentialRampToValueAtTime(900, c.currentTime + 0.03);
@@ -44,12 +40,11 @@ export function useSoundEffects() {
           break;
         }
         case 'tilePlace': {
-          // Satisfying clack: two layered oscillators
           const osc1 = c.createOscillator();
           const osc2 = c.createOscillator();
           const g1 = c.createGain(); const g2 = c.createGain();
           osc1.connect(g1); osc2.connect(g2);
-          g1.connect(c.destination); g2.connect(c.destination);
+          g1.connect(dest); g2.connect(dest);
           osc1.type = 'square'; osc1.frequency.setValueAtTime(400, c.currentTime);
           osc1.frequency.exponentialRampToValueAtTime(200, c.currentTime + 0.06);
           scheduleEnvelope(c, osc1, g1, 0.28, 0.004, 0.09);
@@ -59,10 +54,9 @@ export function useSoundEffects() {
           break;
         }
         case 'pass': {
-          // Low swoosh descending
           const osc = c.createOscillator();
           const g = c.createGain();
-          osc.connect(g); g.connect(c.destination);
+          osc.connect(g); g.connect(dest);
           osc.type = 'sine';
           osc.frequency.setValueAtTime(400, c.currentTime);
           osc.frequency.exponentialRampToValueAtTime(180, c.currentTime + 0.18);
@@ -70,11 +64,10 @@ export function useSoundEffects() {
           break;
         }
         case 'deal': {
-          // Three quick ticks staggered
           for (let i = 0; i < 3; i++) {
             const osc = c.createOscillator();
             const g = c.createGain();
-            osc.connect(g); g.connect(c.destination);
+            osc.connect(g); g.connect(dest);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(900 + i * 80, c.currentTime + i * 0.055);
             g.gain.setValueAtTime(0, c.currentTime + i * 0.055);
@@ -86,12 +79,11 @@ export function useSoundEffects() {
           break;
         }
         case 'win': {
-          // Ascending 3-note fanfare
           const freqs = [523, 659, 784];
           freqs.forEach((freq, i) => {
             const osc = c.createOscillator();
             const g = c.createGain();
-            osc.connect(g); g.connect(c.destination);
+            osc.connect(g); g.connect(dest);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq, c.currentTime + i * 0.13);
             g.gain.setValueAtTime(0, c.currentTime + i * 0.13);
@@ -103,25 +95,24 @@ export function useSoundEffects() {
           break;
         }
         case 'lose': {
-          // Descending 2-note drop
           const freqs = [440, 330];
           freqs.forEach((freq, i) => {
             const osc = c.createOscillator();
             const g = c.createGain();
-            osc.connect(g); g.connect(c.destination);
+            osc.connect(g); g.connect(dest);
             osc.type = 'sine';
             osc.frequency.setValueAtTime(freq, c.currentTime + i * 0.18);
             g.gain.setValueAtTime(0, c.currentTime + i * 0.18);
             g.gain.linearRampToValueAtTime(0.18, c.currentTime + i * 0.18 + 0.02);
-            g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + i * 0.18 + 0.32);
+            g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + i * 0.18 + 0.35);
             osc.start(c.currentTime + i * 0.18);
-            osc.stop(c.currentTime + i * 0.18 + 0.35);
+            osc.stop(c.currentTime + i * 0.18 + 0.38);
           });
           break;
         }
       }
     } catch {
-      // AudioContext not available (SSR, unusual env) — fail silently
+      // Fail silently
     }
   }
 

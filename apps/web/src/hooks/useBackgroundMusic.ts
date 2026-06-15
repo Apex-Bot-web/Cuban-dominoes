@@ -1,23 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-
-const STORAGE_KEY = 'dominoes_music_volume';
-const DEFAULT_VOLUME = 0.12;
-
-function loadVolume(): number {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === null) return DEFAULT_VOLUME;
-  const v = parseFloat(stored);
-  return isNaN(v) ? DEFAULT_VOLUME : Math.max(0, Math.min(1, v));
-}
+import { getSavedVolume, setMasterVolume, unlockAudio } from '../audio/context';
 
 export function useBackgroundMusic(src = '/audio/music.mp3') {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [volume, setVolumeState] = useState<number>(loadVolume);
+  const [volume, setVolumeState] = useState<number>(getSavedVolume);
 
   useEffect(() => {
     const audio = new Audio(src);
     audio.loop = true;
-    audio.volume = loadVolume();
+    audio.volume = getSavedVolume();
     audioRef.current = audio;
 
     const tryPlay = () => audio.play().catch(() => {});
@@ -32,10 +23,19 @@ export function useBackgroundMusic(src = '/audio/music.mp3') {
     };
   }, [src]);
 
+  // Unlock iOS AudioContext on any touch so sound effects work even before
+  // the first tile tap.
+  useEffect(() => {
+    document.addEventListener('touchstart', unlockAudio, { passive: true });
+    return () => document.removeEventListener('touchstart', unlockAudio);
+  }, []);
+
   function setVolume(v: number) {
     const clamped = Math.max(0, Math.min(1, v));
     setVolumeState(clamped);
-    localStorage.setItem(STORAGE_KEY, String(clamped));
+    // Sync both the <audio> element (background music) and the Web Audio
+    // master gain (sound effects) through a single call.
+    setMasterVolume(clamped);
     if (audioRef.current) audioRef.current.volume = clamped;
   }
 
